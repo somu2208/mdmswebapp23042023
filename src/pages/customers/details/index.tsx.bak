@@ -1,0 +1,80 @@
+import KeyboardBackspace from '@mui/icons-material/KeyboardBackspace'
+import { Button, CircularProgress, Grid, Typography, Divider } from '@mui/material'
+import { fetchCustomerDetails } from 'api/services/customers'
+import { useQuery } from 'react-query'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import InstantaneousData from './InstantaneousData'
+import MeterCommunication from './MeterCommunication'
+import PersonalDetails from './PersonalDetails'
+import CustomerPowerConsumption from './power-consumption'
+import PowerOutageCount from './power-outage-count'
+
+const CustomerDetails = () => {
+	const { consumerId } = useParams()
+	const navigate = useNavigate()
+
+	const {
+		data: customerDetails,
+		error: error2,
+		isLoading: detailsLoading,
+	} = useQuery('customerDetails', () =>
+		fetchCustomerDetails({ uscNumber: consumerId })
+	)
+
+	if (detailsLoading) {
+		return (
+			<div className='flex items-center justify-center w-full h-screen'>
+				<CircularProgress />
+			</div>
+		)
+	}
+
+	return (
+		<>
+
+			<Grid md={12} justifyContent="space-between" container >
+				<Grid md={6}>
+					<Typography variant="h4" gutterBottom sx={{ color: "black", pl: 3, pt: 2 }}>
+						Customer Details
+					</Typography>
+				</Grid>
+				<Grid md={6} className="text-right">
+					<Button
+						size='small'
+						variant='outlined'
+						color='secondary'
+						startIcon={<KeyboardBackspace />}
+						onClick={() => navigate('/customers')}
+					>
+						Back
+					</Button>
+				</Grid>
+			</Grid>
+
+			<Divider variant="middle" sx={{ pt: 2 }} />
+
+
+			{/* <div className='px-5 pt-5'>
+				<Button
+					color='secondary'
+					startIcon={<KeyboardBackspace />}
+					onClick={() => navigate('/customers')}
+				>
+					Back
+				</Button>
+			</div> */}
+
+			{/* <div className='px-5 rounded-lg space-y-6 pb-32'> */}
+			<Grid md={12} sx={{ m: 2, mt: 3 }} className='rounded-lg'>
+				<PersonalDetails c={customerDetails} />
+				<MeterCommunication />
+				<InstantaneousData />
+				<CustomerPowerConsumption />
+				{/* <PowerOutageCount /> */}
+			</Grid>
+			{/* </div> */}
+		</>
+	)
+}
+
+export default CustomerDetails

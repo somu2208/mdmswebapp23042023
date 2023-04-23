@@ -1,0 +1,226 @@
+import KeyboardBackspace from '@mui/icons-material/KeyboardBackspace'
+import { Button, CircularProgress } from '@mui/material'
+import { fetchCustomerDetails } from 'api/services/customers'
+import { useQuery } from 'react-query'
+import { useNavigate, useSearchParams, NavLink } from 'react-router-dom'
+import PersonalDetails from './PersonalDetails'
+import CustomerPowerConsumption from './power-consumption'
+import RechargeHistoryGraph from './power-consumption/RechargeHistoryGraph';
+import {
+	fetchPowerConsumptionHistory,
+	fetchTotalUnitConsumedByMeter,
+	totalRevenueGeneratedByMeter,
+	lastUpdateTimeForMetersByMeter,
+	fetchRechargeHistoryGraphByMeter,
+	latestSyncDateRevenueByMeter
+} from 'api/services/prepaid';
+
+import { add5Hr30Min } from '../../../utils';
+
+import {
+	Grid,
+	Divider as MuiDivider,
+	Typography as MuiTypography,
+	Breadcrumbs
+} from "@mui/material";
+import { spacing } from "@mui/system";
+import styled from "styled-components/macro";
+
+import CardItems from './components/CardItem';
+import HistoryCard from './components/HistoryCard';
+import LookUpFilters from '../LookUpFilters';
+import { balanceHistory } from 'api/services/prepaid';
+
+const CustomerDetails = () => {
+
+	const Divider = styled(MuiDivider)(spacing);
+	const Typography = styled(MuiTypography)(spacing);
+
+	const [search] = useSearchParams();
+	const meterId = search.get('meterId');
+	const usc_number = search.get('usc_number');
+	console.log(usc_number)
+	const navigate = useNavigate();
+	const totalUnitConsumed = useQuery('totalUnitConsumed1', () => fetchTotalUnitConsumedByMeter(meterId));
+	const latest_sync_date = useQuery('lastUpdateTimeForMeters1', () => lastUpdateTimeForMetersByMeter(meterId));
+	const recharge_amount = useQuery('totalRevenueGenerated1', () => totalRevenueGeneratedByMeter(meterId));
+	const latestSyncDate = useQuery('latestSyncDateRevenue1', () => latestSyncDateRevenueByMeter(meterId));
+	const { data, error, isLoading } = useQuery('fetchPowerConsumptionHistory', () => fetchPowerConsumptionHistory(meterId))
+	const {
+		data: customerDetails,
+		error: error2,
+		isLoading: detailsLoading,
+	} = useQuery('customerDetails', () =>
+		fetchCustomerDetails({ uscNumber: usc_number })
+	)
+	const res = useQuery('balanceHistory', () =>
+		balanceHistory(meterId)
+	)
+
+	const { data: rechargeHistory2 } = useQuery(meterId, fetchRechargeHistoryGraphByMeter);
+
+
+	if (detailsLoading) {
+		return (
+			<div className='flex items-center justify-center w-full h-screen'>
+				<CircularProgress />
+			</div>
+		)
+	}
+	const consumptionHistoryColumns = [
+		{
+			field: 'date',
+			headerName: 'Date',
+			// key: 'date',
+			// title: 'Date',
+		},
+		{
+			field: 'energy_wh_import',
+			headerName: 'Units consumed (kWh)',
+			width: 150,
+			// key: 'energy_wh_import',
+			// title: 'Units consumed (kWh)',
+		},
+	]
+
+	const consumptionHistoryData = data?.map(v => ({ 'date': v?.date, 'energy_wh_import': Math.abs(v?.sum.energy_wh_import / 1000).toFixed(2) }))
+
+	const balanceHistoryData = res.data?.map(v => ({ balance_amount: v?.balance_amount?.toFixed(2), server_timestamp: v?.server_timestamp && add5Hr30Min(v?.server_timestamp) }))
+
+	const rechargeHistoryData = rechargeHistory2?.data?.data?.map(v => ({ recharge_amount: v?.recharge_amount?.toFixed(2), datetime: add5Hr30Min(v?.date_time) }));
+
+	const balanceHistoryColumns = [
+		{
+			field: 'server_timestamp',
+			headerName: 'Date time',
+			// key: 'server_timestamp',
+			// title: 'Date time',
+		},
+		{
+			field: 'balance_amount',
+			headerName: 'Balance (INR)',
+			width: 150,
+			// key: 'balance_amount',
+			// title: 'Balance (INR)',
+		}
+	]
+
+	const rechargeHistoryColumns = [
+		{
+			field: 'datetime',
+			headerName: 'Date time',
+			// key: 'datetime',
+			// title: 'Date time',
+		},
+		{
+			field: 'recharge_amount',
+			headerName: 'Recharge amount (INR)',
+			width: 150,
+			// key: 'recharge_amount',
+			// title: 'Recharge Amount (INR)',
+		},
+		// {
+		// 	key:'total_recharge_amount',
+		// 	title: 'Total Recharge Amount (INR)'
+		// }
+	]
+
+	//adding unit rate
+	// data['unit_rate'] = customerDetails?.meter_serial_number?.unit_rate;
+	data['unit_rate'] = customerDetails?.meter_serial_number?.unit_rate || '0';
+
+
+	return (
+		<>
+
+			{/* <Grid md={12} justifyContent="space-between" container >
+				<Grid md={6}>
+					<Typography variant="h3" gutterBottom sx={{ color: "black" }}>
+						Prepaid Details
+					</Typography>
+				</Grid>
+				<Grid md={6} sx={{ textAlign: "right" }}>
+					<Button
+						size='small'
+						variant='outlined'
+						color='secondary'
+						startIcon={<KeyboardBackspace />}
+						onClick={() => navigate('/prepaid')}
+					>
+						Back
+					</Button>
+				</Grid>
+			</Grid> */}
+
+			<Grid md={6} mb={2} mt={2}>
+				<Typography variant="h3" gutterBottom sx={{ color: "black" }} >
+					Prepaid Details
+				</Typography>
+				<Breadcrumbs aria-label="breadcrumb" className='breadcrumbtext'>
+					<NavLink to="/prepaid"> Prepaid </NavLink>
+					<Typography variant="caption">Prepaid Details </Typography>
+				</Breadcrumbs>
+			</Grid>
+
+			<Divider mb={3} />
+
+			<Grid justifyContent="space-between" container spacing={3} sx={{ mb: 3 }}>
+				<Grid item xs={12} lg={12}>
+					<LookUpFilters totalUnitConsumed={totalUnitConsumed} latest_sync_date={latest_sync_date} recharge_amount={recharge_amount} latestSyncDate={latestSyncDate} />
+				</Grid>
+				{/* <Grid item xs={12} lg={12} mb={5}>
+					<Button
+						size='small'
+						variant='outlined'
+						color='secondary'
+						startIcon={<KeyboardBackspace />}
+						onClick={() => navigate('/prepaid')}
+					>
+						Back
+					</Button>
+				</Grid> */}
+			</Grid>
+			<Grid justifyContent="space-between" container spacing={3}>
+				<Grid item xs={12} lg={12}>
+					<PersonalDetails title="Customer details">
+						<CardItems c={{ ...customerDetails, totalUnitConsumed: totalUnitConsumed?.data }} />
+					</PersonalDetails>
+				</Grid>
+				<Grid item xs={12} lg={4}>
+					<PersonalDetails title="Consumption history">
+						<HistoryCard columns={consumptionHistoryColumns} tableData={consumptionHistoryData} />
+					</PersonalDetails>
+				</Grid>
+
+				<Grid item xs={12} lg={4}>
+					<PersonalDetails title="Balance history">
+						<HistoryCard columns={balanceHistoryColumns} tableData={balanceHistoryData} />
+					</PersonalDetails>
+				</Grid>
+
+				<Grid item xs={12} lg={4}>
+					<PersonalDetails title="Recharge history">
+						<HistoryCard columns={rechargeHistoryColumns} tableData={rechargeHistoryData} />
+					</PersonalDetails>
+				</Grid>
+
+				<Grid item xs={12} lg={12}>
+					<CustomerPowerConsumption data={data} />
+				</Grid>
+
+				<Grid item xs={12} lg={12}>
+					<RechargeHistoryGraph />
+				</Grid>
+				{/* <PersonalDetails  title="Power Consumption Graph "> */}
+
+				{/* </PersonalDetails> */}
+				{/* <PersonalDetails  title="Recharge history graph"> */}
+
+				{/* </PersonalDetails> */}
+
+			</Grid>
+		</>
+	)
+}
+
+export default CustomerDetails

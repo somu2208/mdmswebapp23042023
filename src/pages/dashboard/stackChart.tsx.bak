@@ -1,0 +1,207 @@
+import React, { useState,useEffect,useRef } from "react";
+import Chart from "react-apexcharts";
+
+import styled, { withTheme } from "styled-components/macro";
+
+import { MoreVertical } from "react-feather";
+import { rgba } from "polished";
+
+import { fetchLast30DaysActiveMetersSingle } from 'api/services/dashboard'
+import { fetchLast30DaysActiveMetersThird } from 'api/services/dashboard'
+import { fetchLast30DaysActiveMetersAll } from 'api/services/dashboard'
+import { useQuery } from 'react-query'
+import { fetchLatestDateTimeForDataSync } from 'api/services/time-labels'
+import { add, eachDayOfInterval, sub } from 'date-fns'
+import format from 'date-fns/format'
+import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
+import {
+    Card as MuiCard,
+    CardContent as MuiCardContent,
+    CardHeader,
+    IconButton,
+    Grid,
+    Typography,
+  } from "@mui/material";
+  import { spacing } from "@mui/system";
+
+  
+  const Card = styled(MuiCard)(spacing);
+  
+  const CardContent = styled(MuiCardContent)`
+    &:last-child {
+      padding-bottom: 14px;
+    }
+  `;
+  
+  const ChartWrapper = styled.div`
+    height: 240px;
+    width: 100%;
+  `;
+  
+const StackedBarApexes = ({ theme }) => {
+
+    const firstDatasetColor = '#407ddd';
+    const secondDatasetColor = '#dee2e6';
+
+	   const { data, isLoading, error} = useQuery(
+          'last30DaysActiveMetersAll',
+          fetchLast30DaysActiveMetersAll, 
+      )
+
+      let categories = data?.category;
+      let phase1 = data?.series?.series[0].data;
+      let phase3 = data?.series?.series[1].data;
+      console.log("--------------",categories);
+      console.log("-/-/-/-/-/-/-/-/-/-/-/-/-/-",phase1);
+      console.log("/////////////",phase3);
+       // console.log(data?.data?.data,"rrrrrrrrrrrrrrrrr")
+
+    //    const isMounted = useRef(false);
+
+        // useEffect(() => {
+        //     isMounted.current = true;
+        //     return () => isMounted.current = false;
+        // }, []);
+
+    // const values = data?.data?.data?.map((item) =>
+    //     (item.countDistinct.meter_serial_number)
+    // )
+	
+ 	// const xaxis = data?.data?.data?.map((item) =>
+ 	// 	(item.source_date)
+ 	// )
+
+
+ 
+    //   let options = ({chart: {
+    //     type: 'bar', height: 350,
+    //     stacked: true,
+    //     toolbar: {
+    //       show: true
+    //     },
+    //     zoom: {
+    //       enabled: true
+    //     }
+    //   },
+    //   fill: { colors: ['#dc3545', '#f2c010', '#fdff00' ,'#3f8755'] },
+    //   colors: ['#dc3545', '#f2c010', '#fdff00','#3f8755'],
+    //   plotOptions: {
+    //     bar: {
+    //       horizontal: false,
+    //       borderRadius: 10,
+    //        columnWidth: '10%'
+    //     },
+    //   },
+    //   xaxis: {
+    //           //passing category
+    //   //  categories:category,
+    //     labels: { //for vertical
+    //       rotate: -90,
+    //       style: {
+    //         fontSize: '9px'
+    //        }
+    //     },
+    //   },
+    //   legend: {
+    //     position: 'top',
+    //     //fontSize: "32px"
+    //    // offsetY: 40
+    //   }, 
+    // });
+
+
+    
+
+    const datafinal = {
+        labels: categories,
+        datasets: [
+          {
+            label: "1 Phase",
+            backgroundColor: firstDatasetColor,
+            borderColor: firstDatasetColor,
+            hoverBackgroundColor: firstDatasetColor,
+            hoverBorderColor: firstDatasetColor,
+            // data: data?.series?.data?.data_p3,
+            data: phase1,
+            barPercentage: 0.6,
+            categoryPercentage: 0.5,
+          },
+          {
+            label: "3 Phase",
+            backgroundColor: secondDatasetColor,
+            borderColor: secondDatasetColor,
+            hoverBackgroundColor: secondDatasetColor,
+            hoverBorderColor: secondDatasetColor,
+            // data: data?.series?.data_p1,
+            data: phase3,
+            barPercentage: 0.6,
+            categoryPercentage: 0.5,
+            borderRadius: 6,
+          },
+        ],
+      };
+
+      const options = {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false,
+          },
+        },
+        scales: {
+          y: {
+            grid: {
+              display: false,
+            },
+            stacked: true,
+          },
+    
+          x: {
+            stacked: true,
+            grid: {
+              color: "transparent",
+            },
+          },
+        },
+      };
+
+
+
+
+//	console.log(props); //990
+	
+	return(
+
+        <Card mb={6}>
+       {/* <CardHeader title="Active Meters in Last 30 days"/> */}
+       <Grid md={12} justifyContent="space-between" container>
+         <Grid md={6} p={2} >
+           <Typography variant="h6">
+             Active meters in last 30 days
+           </Typography>
+        </Grid>
+         <Grid md={6} p={2}>
+           <Typography variant="caption">
+             <div className="prepaidtimeclass" ><AccessAlarmIcon className="alarmicon" />{''}{localStorage.getItem('syncdatetime')}</div>
+           </Typography>
+         </Grid>
+       </Grid>
+       <CardContent>
+         <ChartWrapper>
+         <Chart type="bar" data={datafinal} options={options} />
+           {/* <Chart type="bar" /> */}
+           {/* <Chart
+            //  options={options}
+            //  series={series}
+              type="bar"
+              width="100%"
+              height="450"
+            /> */}
+        </ChartWrapper>
+       </CardContent>
+     </Card>
+	
+	);
+}
+
+export default withTheme(StackedBarApexes);

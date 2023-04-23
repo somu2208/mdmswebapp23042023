@@ -1,0 +1,153 @@
+import React from "react";
+import styled, { withTheme } from "styled-components/macro";
+import Chart from "react-chartjs-2";
+import { MoreVertical } from "react-feather";
+
+import {
+	fetchLatestTimeForPowerConsumptionMonthlyAndYearly,
+	fetchPowerConsumptionByYear,
+} from 'api/services/dashboard'
+import format from 'date-fns/format'
+import {useEffect, useState} from 'react'
+import {useMutation} from 'react-query'
+import {getListOfLast10Years} from 'utils'
+
+import { green, red, orange } from "@mui/material/colors";
+import {
+  Card as MuiCard,
+  CardContent as MuiCardContent,
+  CardHeader,
+  IconButton,
+  Table,
+  TableBody,
+  TableCell as MuiTableCell,
+  TableHead,
+  TableRow as MuiTableRow,
+  Typography,
+} from "@mui/material";
+import { spacing } from "@mui/system";
+
+const Card = styled(MuiCard)(spacing);
+
+const CardContent = styled(MuiCardContent)`
+  &:last-child {
+    padding-bottom: 24px;
+  }
+`;
+
+const ChartWrapper = styled.div`
+  height: 168px;
+  position: relative;
+`;
+
+const DoughnutInner = styled.div`
+  width: 100%;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  margin-top: -22px;
+  text-align: center;
+  z-index: 0;
+`;
+
+const TableRow = styled(MuiTableRow)`
+  height: 42px;
+
+  &:last-child th,
+  &:last-child td {
+    border-bottom: 0;
+  }
+`;
+
+const TableCell = styled(MuiTableCell)`
+  padding-top: 0;
+  padding-bottom: 0;
+`;
+
+const GreenText = styled.span`
+  color: ${() => green[400]};
+  font-weight: 400;
+`;
+
+const RedText = styled.span`
+  color: ${() => red[400]};
+  font-weight: 400;
+`;
+
+const DoughnutChartHes = ({ theme }) => {
+	const [state, setState] = useState<{year: number | string}>({
+		year: new Date().getFullYear(),
+	})
+	const [latestTime, setLatestTime] = useState('')
+	const {
+		data: res,
+		isLoading,
+		mutate,
+	} = useMutation('powerConsumptionTillEndOfYear', fetchPowerConsumptionByYear)
+	
+	useEffect(() => {
+		getLatestTime()
+		mutate({
+			year: state.year,
+		})
+	}, [])
+
+	const getLatestTime = async () => {
+		const res = await fetchLatestTimeForPowerConsumptionMonthlyAndYearly()
+		setLatestTime(res)
+	}	
+	
+	const data = res?.data?.data
+
+	const values = data?.map((item) =>
+		(item.sum.energy_wh_import / 1000).toFixed(2)
+	)
+	let newsum = 0;
+	
+	newsum=(data?.reduce((newsum,currentItem) =>  newsum = newsum + parseInt((currentItem.sum.energy_wh_import / 1000).toFixed(2)) , 0 ));
+	
+	const donutdata = {
+		labels: ["January", "Febraury", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+		datasets: [
+		  {
+			data: values,
+			backgroundColor: ['#3b7ddd', '#fcb92c', '#dee2e6', '#dc3545' ]
+		  },
+		],
+	};
+
+	const options = {
+		maintainAspectRatio: false,
+		plugins: {
+		  legend: {
+			display: false,
+		  },
+		},
+		cutout: "85%",
+	};
+
+  return (
+    <Card mb={8}>
+      <CardHeader
+        action={
+          <IconButton aria-label="settings" size="large">
+            <MoreVertical />
+          </IconButton>
+        }
+        title="MONTHWISE USES IN KWH"
+      />
+      <CardContent>
+        <ChartWrapper>
+          <DoughnutInner>
+			<Typography variant="h6">TOTAL USAGE</Typography>
+            <Typography variant="caption">{newsum} kWh</Typography>            
+          </DoughnutInner>
+          <Chart type="doughnut" data={donutdata} options={options} />
+        </ChartWrapper>        
+      </CardContent>
+	  <Typography variant="caption"><div className="text-right" >{latestTime}</div></Typography>
+    </Card>
+  );
+};
+
+export default withTheme(DoughnutChart);

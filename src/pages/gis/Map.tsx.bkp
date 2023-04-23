@@ -1,0 +1,75 @@
+import {CircularProgress, Typography, Grid} from '@mui/material'
+import {useRef, useEffect} from 'react'
+
+const Map = ({mutate, locations, error, loading, state}) => {
+	const ref = useRef()
+
+	useEffect(() => {
+		mutate({areaId: state.areaId})
+	}, [])
+
+	useEffect(() => {
+		if (!ref.current || !locations) return
+
+		const map = new google.maps.Map(ref.current, {
+			zoom: 13,
+			center: {
+				lat: locations[Math.floor(locations.length / 2)]?.lat,
+				lng: locations[Math.floor(locations.length / 2)]?.long,
+			},
+		})
+
+		var infoWindow = (location) =>
+			new google.maps.InfoWindow({
+				content: `<Grid>
+        <Typography>Meter Number : ${location?.meterId || '-'}</Typography>
+        </Grid>`,
+			})
+
+		const svgMarker = (fillColor: string) => ({
+			path: 'M10.453 14.016l6.563-6.609-1.406-1.406-5.156 5.203-2.063-2.109-1.406 1.406zM12 2.016q2.906 0 4.945 2.039t2.039 4.945q0 1.453-0.727 3.328t-1.758 3.516-2.039 3.070-1.711 2.273l-0.75 0.797q-0.281-0.328-0.75-0.867t-1.688-2.156-2.133-3.141-1.664-3.445-0.75-3.375q0-2.906 2.039-4.945t4.945-2.039z',
+			fillColor,
+			fillOpacity: 1,
+			strokeWeight: 0,
+			rotation: 0,
+			scale: 1.4,
+			anchor: new google.maps.Point(15, 30),
+		})
+
+		locations.forEach((location) => {
+			const marker = new google.maps.Marker({
+				position: new google.maps.LatLng(location?.lat, location?.long),
+				map: map,
+				// icon: location.isActive
+				// 	? `/images/green_marker.png`
+				// 	: `/images/red_marker.png`,
+				icon: location.isActive ? svgMarker('#4CBB17') : svgMarker('#ff0000'),
+				clickable: true,
+			})
+			google.maps.event.addDomListener(marker, 'click', function () {
+				infoWindow(location).open(map, marker)
+			})
+		})
+	}, [locations])
+
+	// if (!state.area || !state.section)
+	// 	return (
+	// 		<div className='text-center pt-5'>Please select section and area</div>
+	// 	)
+	if (loading)
+		return (
+			// <div className='flex justify-center pt-10'>
+			<Grid sx={{textAlign:"center", pt:5}}>
+				<CircularProgress />
+			</Grid>
+		)
+	if (locations && !locations.length)
+		return <Typography sx={{textAlign:"center"}}>No locations found</Typography>
+	return (
+		<Grid>
+			<section ref={ref} id='google_map' style={{height: '500px'}}></section>
+		</Grid>
+	)
+}
+
+export default Map

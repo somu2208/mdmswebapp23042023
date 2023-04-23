@@ -1,0 +1,15 @@
+import Card from './components/DetailsCard'
+const PersonalDetails = ({title, children}) => {
+	
+	return (
+		<Card title={title}>
+			<div className=''>
+				{children}
+				
+			</div>
+		</Card>
+	)
+}
+
+
+export default PersonalDetails

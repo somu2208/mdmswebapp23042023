@@ -1,0 +1,92 @@
+import {CircularProgress} from '@mui/material'
+import {fetchEventTamperData} from 'api/services/tampers'
+import Card from 'pages/customers/details/components/DetailsCard'
+import {useQuery} from 'react-query'
+import {useParams} from 'react-router-dom'
+import Chart from 'react-apexcharts'
+import {ApexOptions} from 'apexcharts'
+
+const ConnectAndDisconnectTamperChart = () => {
+	const params = useParams()
+	const meterId = params.meterId
+
+	const {data, error, isLoading} = useQuery('connectDisconnectTampers', () =>
+		fetchEventTamperData(meterId, '7')
+	)
+
+	return (
+		<Card
+			title='Connect and disconnect event tampers'
+			subtitle={`Latest update time: ${data?.time}`}
+		>
+			{isLoading ? (
+				<div className='flex items-center justify-center pt-10'>
+					<CircularProgress />
+				</div>
+			) : (
+				<div className=''>
+					<Chart
+						type='bar'
+						height={540}
+						id='metercover-event-tampers'
+						series={[
+							{
+								data: data?.yaxis.map((item) => item.count),
+								name: 'Occurrence',
+							},
+						]}
+						options={{
+							xaxis: {
+								categories: data?.xaxis,
+								title: {text: 'Event Type'},
+								labels: {
+									style: {fontSize: '12px'},
+								},
+							},
+							yaxis: {
+								title: {text: 'count'},
+								labels: {
+									style: {fontSize: '12px'},
+								},
+							},
+							dataLabels: {
+								enabled: true,
+								style: {fontSize: '12px'},
+							},
+							legend: {
+								position: 'top',
+								offsetY: 0,
+							},
+							colors:['#407ddd','#dee2e6'],
+							...chartOptions,
+						}}
+					/>
+				</div>
+			)}
+		</Card>
+	)
+}
+
+export default ConnectAndDisconnectTamperChart
+
+const chartOptions: ApexOptions = {
+	legend: {
+		position: 'top',
+		offsetY: 0,
+	},
+	stroke: {
+		width: 2.5,
+	},
+	plotOptions: {
+		bar: {
+			columnWidth: '7%',
+		},
+	},
+	chart: {
+		toolbar: {
+			tools: {
+				download: false,
+			},
+		},
+	},
+}

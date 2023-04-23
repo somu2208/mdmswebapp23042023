@@ -1,0 +1,259 @@
+import {Visibility} from '@mui/icons-material'
+import {CircularProgress, Pagination} from '@mui/material'
+import {exportMeterData, getMeters} from 'api/services/meters'
+import CsvExport from 'components/CsvExport'
+import ExportToExcel from 'components/ExportToExcel'
+import {PowerOff, PowerOn} from 'components/icons'
+import Table from 'components/NewTable/meterTable'
+import {add, format} from 'date-fns'
+import {useEffect, useState} from 'react'
+import {useMutation} from 'react-query'
+import {Link, useNavigate} from 'react-router-dom'
+import {getCSVHeaderLabels} from 'utils'
+import LookUpFilters from './LookUpFilters'
+// import {Pageview} from '@mui/icons-material'
+import {RemoveRedEye} from '@mui/icons-material'
+import {
+  Grid,
+  Divider as MuiDivider,
+  Typography as MuiTypography,
+  Chip,
+} from "@mui/material";
+import styled from "styled-components/macro";
+import { spacing } from "@mui/system";
+
+
+
+const Divider = styled(MuiDivider)(spacing);
+
+const Typography = styled(MuiTypography)(spacing);
+
+const MetersTable = () => {
+	const {data, isLoading, mutate} = useMutation(getMeters)
+	const [page, setPage] = useState<number>(1)
+	const [limit, setLimit] = useState<number>(101)
+	const navigate = useNavigate()
+
+	const handleChange = (event, value) => {
+		setPage(value)
+		return mutate({page: value, limit})
+	}
+	useEffect(() => {
+		mutate({limit, page})
+	}, [])
+	
+
+	const handleExport = async () => {
+		const data = await exportMeterData()
+		return data.data
+	}
+
+	return (
+		<Grid justifyContent="space-between" container spacing={6}>			
+			<Grid item xs={12} lg={12}>			
+				<Typography variant="h3" gutterBottom>
+					Meters
+				</Typography>
+				<Divider my={3} />
+				<Grid container spacing={6}>
+				<Grid item xs={12} lg={12} spacing={6} >
+					{!isLoading ? (
+					<section className='bg-white rounded-xl shadow-md p-3 min-h-[500px]'>
+						<div className=''>
+							<div className='text-sm-count text-right'>
+								<Typography>Total Count: {data?.data?.meta?.filter_count}</Typography>
+							</div>
+							<Table
+								columns={columns}
+								tableData={data?.data?.data || []}
+								loading={isLoading}								
+							/>
+							
+						</div>
+						</section>
+					) : (
+						<div className='flex justify-center mt-8'>
+							<CircularProgress />
+						</div>
+					)}
+				</Grid>
+			</Grid>
+			</Grid>
+		</Grid>
+	)
+}
+
+//add 5hr30min to date and format
+export const add5Hr30Min = (date) => {
+	return format(
+		add(new Date(date), {
+			hours: 5,
+			minutes: 30,
+		}),
+		'dd/MM/yyyy hh:mm:ss a'
+	)
+}
+
+const columns = [	
+	{
+		field: 'action',
+		headerName: 'Action',
+		width: 70,
+		renderCell: (item) => {
+			return (
+				<>
+					<Link
+						to={`${item?.row?.meter_serial_number}`}
+						className='hover:underline pl-3'
+					>
+						<RemoveRedEye />
+					</Link>
+				</>
+			)
+		}
+	},
+	{
+		field:'meter_serial_number',
+		headerName: 'Serial number',	
+		width: 120,
+		renderCell: (item) => {
+			if (item?.row?.meter_serial_number) {
+				return (
+					<Link
+						className='text-blue-500 hover:underline'
+						to={{
+							pathname: `${item?.row?.meter_serial_number}/meter360/instantaneous`,
+							search: `phase=${item?.row?.meter_connection_type?.phase_id}&customerId=${item?.row?.usc_number}`,
+						}}
+					>
+						{item?.row?.meter_serial_number}
+					</Link>
+				)
+			}
+		}
+	},
+	{
+		field: 'phase_name',
+		headerName: 'Meter connection type',
+		width: 175,
+		valueGetter:(params) => {
+			let result = [];
+			if(params?.row?.meter_connection_type){
+				if(params?.row?.meter_connection_type?.phase_name){
+					result.push(params.row.meter_connection_type.phase_name);
+				}
+			}
+			return result;
+		}		
+	},
+	{
+		field:'latest_sync_date',
+		headerName:'Last sync date time',	
+		width: 170,
+		renderCell : (item) => {
+			if(item?.row?.latest_sync_date){
+				const value = item?.row?.latest_sync_date && add5Hr30Min(item?.row?.latest_sync_date);
+				return(value);
+			}
+		}
+
+		// render: (rowData) => (
+		// 	<>
+		// 		{rowData?.latest_sync_date &&
+		// 			format(
+		// 				add(new Date(rowData?.latest_sync_date), {hours: 5, minutes: 30}),
+		// 				'dd/MM/yyyy, hh:mm:ss a'
+		// 			)}
+		// 	</>
+		// ),
+	},
+	
+	{
+		field: 'usc_number',
+		headerName: 'Customer service number',	
+		width: 210,
+	},	
+	{
+		field: 'meter_ipaddress',
+		headerName: 'Meter IP address',	
+		width: 310,
+	},
+	{
+		field: 'meter_imei_number',
+		headerName: 'IMEI number',	
+		width: 150,
+	},
+	{
+		field: 'meter_sim_number',
+		headerName: 'SIM number',	
+		width: 180,
+	},
+	{
+		field: 'power_status',
+		headerName: 'Power Off/On',
+		width: 130,
+		renderCell: (item) => {
+			if (item?.row?.power_status) {
+				if (item?.row?.power_status === 'On') {					
+					return (
+						<Chip label="Active" color="success" className="statusbox" />
+					)
+				} else {					
+					return (
+						<Chip label="Inactive" color="warning" className="statusbox" />
+					)
+				}
+			}
+		}
+		
+	},
+	{
+		field: 'latest_reading_kWh',
+		headerName: ' Total power consumption (Kwh)',
+		width: 220,
+		renderCell: (item) => {
+			if(item?.row?.latest_reading_kWh){
+				const value = (item?.row?.latest_reading_kWh / 1000).toFixed(2);
+				return(value);
+			}
+		},
+	},
+	{
+		field: 'meter_capacity',
+		headerName: 'Meter capacity',
+		width: 130,
+	},
+	{
+		field: 'latest_poweroff_datetime',
+		headerName: 'Last power outage time',
+		width: 170,
+		renderCell: (item) => {
+			if(item?.row?.latest_poweroff_datetime){
+				const value = add5Hr30Min(item?.row?.latest_poweroff_datetime);
+				return(value);
+			}
+		},
+		// render: (rowData) => add5Hr30Min(rowData?.latest_poweroff_datetime),
+		// excelRender: (value) => add5Hr30Min(value),
+	},
+	{
+		field: 'meter_signal_strength',
+		headerName: 'Average signal strength',
+		width: 170,
+	},
+	{
+		field: 'meter_health_indicator',
+		headerName: 'Meter health',
+		width: 120,
+	}		
+]
+
+export default MetersTable
+
+
+	
+	
+
+	
+
+

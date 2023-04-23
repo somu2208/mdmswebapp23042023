@@ -1,0 +1,63 @@
+import {Breadcrumbs, CircularProgress, Grid} from '@mui/material'
+import {getData} from './getData'
+import {useQuery, UseQueryResult} from 'react-query'
+import {fetchCustomerViewDetails} from 'api/services/customers'
+import {Link, useParams} from 'react-router-dom'
+
+function ViewCustomer() {
+	const params = useParams()
+
+	const {data, isLoading, error}: UseQueryResult<any, Error> = useQuery(
+		['customer-view-details', params.consumerId],
+		fetchCustomerViewDetails
+	)
+
+	if (isLoading) {
+		return (
+			<div className='flex items-center justify-center w-full h-screen'>
+				<CircularProgress />
+			</div>
+		)
+	}
+
+	if (error) {
+		return <div className='text-lg text-gray-700 p-4'>{error?.message}</div>
+	}
+
+	return (
+		<main>
+			<div className='pb-24 bg-primary'></div>
+			<div className='mt-[-100px] space-y-7 pb-16 px-5 pt-5'>
+				<div className='bg-white rounded-xl p-3'>
+					<Breadcrumbs aria-label='breadcrumb'>
+						<Link to='/customers'>
+							<h5 className='text-lg text-black'>Customers</h5>
+						</Link>
+						<h5 className='text-lg text-black'>{params?.consumerId}</h5>
+					</Breadcrumbs>
+					{getData(data?.data?.data[0]).map((item, index) => (
+						<div className='border mt-5 pb-5 rounded-md' key={index}>
+							<div className='bg-gray-200'>
+								<h5 className='text-md text-gray-600 p-2 mb-5'>{item.title}</h5>
+							</div>
+							<Grid container className='px-5 py-2'>
+								{item.values.map((item, index) => (
+									<Grid item xs={4} key={index}>
+										<div className='mb-4 p-2'>
+											<h6 className='text-sm text-gray-500 mb-1.5'>
+												{item.label}
+											</h6>
+											<h4>{item.value}</h4>
+										</div>
+									</Grid>
+								))}
+							</Grid>
+						</div>
+					))}
+				</div>
+			</div>
+		</main>
+	)
+}
+
+export default ViewCustomer

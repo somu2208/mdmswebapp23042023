@@ -1,0 +1,165 @@
+import React from "react";
+import {
+	Breadcrumbs, CircularProgress, Grid, Divider as MuiDivider,
+	Typography as MuiTypography,
+	TextField as MuiTextField,
+} from '@mui/material'
+import { getMeterDetails } from 'api/services/meters'
+import AllTampersChart from 'pages/tampers/AllTampersChart'
+import ConnectAndDisconnectTamperChart from 'pages/tampers/ConnectAndDisconnectTamperChart'
+import CurrentEventTamperChart from 'pages/tampers/CurrentEventTampersChart'
+import MeterCoverOpenTamperChart from 'pages/tampers/MeterCoverOpenTamperChart'
+import OtherEventTamperChart from 'pages/tampers/OtherEventTamperData'
+import PowerEventTampers from 'pages/tampers/PowerEventTampers'
+import TransactionEventChart from 'pages/tampers/TransactionEventChart'
+import VoltageEventTampers from 'pages/tampers/VoltageEvents'
+import { useQuery, UseQueryResult } from 'react-query'
+import { Link, useParams, NavLink } from 'react-router-dom'
+import { getData } from './getData'
+import NamePlateDetails from '../meters360/NamePlateDetailsM'
+import MeterOperations from './MeterOperations'
+import styled from "styled-components/macro";
+import { spacing } from "@mui/system";
+
+
+function ViewMeterDetails() {
+	
+	const TextFieldSpacing = styled(MuiTextField)(spacing);
+	const TextField = styled(TextFieldSpacing)`width: 100%;`;
+	
+	const params = useParams()
+	const Divider = styled(MuiDivider)(spacing);
+
+	const Typography = styled(MuiTypography)(spacing);
+
+	const { data, isLoading, error }: UseQueryResult<any, Error> = useQuery(
+		['meter-details', params.meterId],
+		getMeterDetails
+	)
+	
+	if (isLoading) {
+		return (
+			// <div className='flex items-center justify-center w-full h-screen'>
+			<Grid sx={{ textAlign: "center", mt: 5 }}>
+				<CircularProgress />
+			</Grid>
+		)
+	}
+
+	if (error) {
+		// return <div className='text-lg text-gray-700 p-4'>{error?.message}</div>
+		return <Grid sx={{ color: "gray", fontWeight: 700 }}>{error?.message}</Grid>
+	}
+
+	return (
+		<React.Fragment>
+			{/* <Grid justifyContent="space-between" container spacing={6}>
+			<Grid item xs={12} lg={12}>
+				<Typography variant="h3" gutterBottom>
+					<Link to='/meters'>Meters</Link> / Allocated
+				</Typography>
+			</Grid>
+		</Grid> */}
+
+			<Grid md={6} mb={2} mt={2}>
+				<Typography variant="h3" gutterBottom sx={{ color: "black" }} >
+					Meter Details
+				</Typography>
+				<Breadcrumbs aria-label="breadcrumb" className='breadcrumbtext'>
+					<NavLink to="/meters"> Meters </NavLink>
+					<Typography variant="caption">Meter Details</Typography>
+				</Breadcrumbs>
+			</Grid>
+
+			<Divider />
+
+			<Grid container>
+				<Grid item xs={12} lg={12}>
+					{getData(data?.data?.data[0]).map((item, index) => (
+						<Grid item xs={12} lg={12} spacing={6} sx={{ backgroundColor: "white" }} className='rounded-xl' key={index}>
+							<Grid mt={5} className='border rounded-xl'>
+								<Grid sx={{ borderBottom: "1px solid #eee" }}>
+									<Typography variant="h6" p={2} sx={{ color: "black", fontWeight: 500 }}> {item.title} </Typography>
+								</Grid>
+								<Grid container className='px-5'>
+									{item.values.map((item, index) => (
+										<Grid item xs={4} key={index}>
+											<Grid p={2}>
+												{/* <h6 className='text-sm text-gray-500 mb-1.5'>
+													{item.label}
+												</h6> 
+												<Typography variant="h6" mb={1} sx={{ color: "gray", fontWeight: 500 }}> {item.label} </Typography>
+												<Typography sx={{ fontSize: 14 }}> {item.value} </Typography>*/}
+												
+												<TextField						
+													value={item.value}
+													label={item.label}
+													id="standard-read-only-input"
+													variant="outlined"	
+													InputLabelProps={{
+														shrink: true,
+													}}
+													InputProps={{
+														readOnly: true,
+													}}
+												/>
+												
+												
+											</Grid>
+										</Grid>
+									))}
+								</Grid>
+							</Grid>
+						</Grid>
+					))}
+				</Grid>
+			</Grid>
+
+			<Grid sx={{mt:5}}>
+				<NamePlateDetails />
+			</Grid>
+
+			<Grid container spacing={6}>
+				<Grid item xs={12} lg={12} spacing={6}>
+					<MeterOperations
+						details={{
+							csn: data?.data?.data[0]?.usc_number,
+							meterId: data?.data?.data[0]?.meter_serial_number,
+						}}
+					/>
+				</Grid>
+			</Grid>
+
+			<Grid container>
+				<Grid item xs={12} lg={12} >
+					<AllTampersChart />
+				</Grid>
+				<Grid item xs={12} lg={12}>
+					<PowerEventTampers />
+				</Grid>
+				<Grid item xs={12} lg={12} >
+					<VoltageEventTampers />
+				</Grid>
+				<Grid item xs={12} lg={12}>
+					<CurrentEventTamperChart />
+				</Grid>
+				<Grid item xs={12} lg={12} >
+					<OtherEventTamperChart />
+				</Grid>
+				<Grid item xs={12} lg={12} >
+					<TransactionEventChart />
+				</Grid>
+				<Grid item xs={12} lg={12} >
+					<MeterCoverOpenTamperChart />
+				</Grid>
+				<Grid item xs={12} lg={12}>
+					<ConnectAndDisconnectTamperChart />
+				</Grid>
+			</Grid>
+
+
+		</React.Fragment>
+	)
+}
+
+export default ViewMeterDetails

@@ -1,0 +1,154 @@
+import { CircularProgress, MenuItem } from "@mui/material";
+import {
+  fetchDailyPowerConsumptionOfACustomer,
+  fetchLatestTimeCustomerPowerOutageCount,
+  fetchPowerOutageOfSelectedMonth,
+  fetchPowerOutageOfThisYear,
+} from "api/services/customers";
+import Table from "components/NewTable";
+import { format } from "date-fns";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery } from "react-query";
+import { useSearchParams } from "react-router-dom";
+import Card from "../components/DetailsCard";
+
+const PowerOutageCount = () => {
+  const [search] = useSearchParams();
+  const meterId = search.get("meterId");
+  const [selectedData, setSelectedData] = useState(null);
+
+  const {
+    data: time,
+    error: timeError,
+    isLoading: timeLoading,
+  } = useQuery("latestUpdateTime", () =>
+    fetchLatestTimeCustomerPowerOutageCount(meterId)
+  );
+
+  const {
+    data: leftPaneldata,
+    isLoading,
+    error,
+  } = useQuery("powerOutageCountYearly", () =>
+    fetchPowerOutageOfThisYear({ meterId })
+  );
+
+  const setRightPanel = (data) => {
+    console.log(data);
+    setSelectedData(data);
+  };
+
+  const lefPanelTableData = leftPaneldata?.map((item) => ({
+    month: item.date_month,
+    year: item.date_year,
+    monthYear: (
+      <li
+        className="text-blue-600 hover:underline list-none cursor-pointer py-2 "
+        onClick={() => setRightPanel(item)}
+      >{`${item.date_month}-${item.date_year}`}</li>
+    ),
+    outageCount: (item.count.outage_duration / 60).toFixed(2),
+  }));
+
+  if (error || timeError)
+    return <div>Server error loading power outage count</div>;
+
+  if (isLoading || timeLoading)
+    return (
+      <div className="flex justify-center pt-10">
+        <CircularProgress />
+      </div>
+    );
+  return (
+    <Card
+      title="Power Outage Count"
+      subtitle={`Latest Updated Time: ${format(
+        new Date(time),
+        "dd/MM/yyyy HH:mm:ss"
+      )}`}
+    >
+      {!isLoading ? (
+        <div className="grid grid-cols-2 gap-5">
+          <PanelLeft tableData={lefPanelTableData} loading={isLoading} />
+          {selectedData ? (
+            <PanelRight selectedData={selectedData} meterId={meterId} />
+          ) : (
+            <p className="text-center text-sm">Select a date to view details</p>
+          )}
+        </div>
+      ) : (
+        <div className="min-h-[400px]">
+          <CircularProgress />
+        </div>
+      )}
+    </Card>
+  );
+};
+
+export default PowerOutageCount;
+
+const PanelLeft = ({ tableData, loading }) => {
+  return (
+    <div className="">
+      <Table tableData={tableData} columns={leftColumns} loading={loading} />
+    </div>
+  );
+};
+
+const leftColumns = [
+  { key: "monthYear", title: "Month and Year" },
+  { key: "outageCount", title: "Power Off Duration(in hours)" },
+];
+
+const PanelRight = ({ selectedData, meterId }) => {
+  const { data, error, isLoading, mutate } = useMutation(
+    "outageDailyData",
+    fetchPowerOutageOfSelectedMonth
+  );
+
+  useEffect(() => {
+    mutate({
+      meterId,
+      month: selectedData.date_month,
+      year: selectedData.date_year,
+    });
+  }, [selectedData]);
+
+  const tableData = data?.map((item) => ({
+    date: (
+      <li className="py-2 list-none">
+        {`${item.source_date_time_day}-${item.date_month}-${item.date_year}`}
+      </li>
+    ),
+    outageCount: (item.count.outage_duration / 60).toFixed(2),
+  }));
+
+  if (isLoading)
+    return (
+      <div className="flex justify-center pt-10">
+        <CircularProgress />
+      </div>
+    );
+
+  if (error) return <div>Server error loading data</div>;
+  return (
+    <div className="">
+      {tableData?.length ? (
+        <Table
+          columns={panelRightColumns}
+          loading={isLoading}
+          data={tableData}
+        />
+      ) : (
+        <p className="text-center text-sm">
+          There is no data for the month and year selcted
+        </p>
+      )}
+    </div>
+  );
+};
+
+const panelRightColumns = [
+  { key: "date", title: "Date" },
+  { key: "outageCount", title: "Power Off Duration(in hours)" },
+];

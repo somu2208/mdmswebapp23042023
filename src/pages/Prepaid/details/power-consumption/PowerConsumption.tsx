@@ -1,0 +1,224 @@
+import { Button, CircularProgress, MenuItem, TextField, Grid, Typography } from '@mui/material'
+import { ApexOptions } from 'apexcharts'
+import { fetchPowerConsumptionHistoryGraph, fetchPowerConsumptionHistoryGraphLastUpdated } from 'api/services/prepaid'
+import ChartWrapper from 'components/ChartWrapper'
+import { add } from 'date-fns'
+import format from 'date-fns/format'
+import { useEffect, useState } from 'react'
+import Chart from 'react-apexcharts'
+import { useQuery, useMutation } from 'react-query'
+import { useSearchParams } from 'react-router-dom'
+import { add5Hr30Min } from 'utils';
+import { getListOfLast10Years, getListOfMonths } from 'utils'
+import {
+	Card as MuiCard,
+	CardContent as MuiCardContent,
+	CardHeader,
+	IconButton,
+} from "@mui/material";
+import { spacing } from "@mui/system";
+import styled, { withTheme } from "styled-components/macro";
+
+const Card = styled(MuiCard)(spacing);
+const CardContent = styled(MuiCardContent)`
+	  &:last-child {
+		padding-top: 0;
+		padding-bottom: 24px;
+	  }
+	`;
+
+
+const Monthly = ({ data }) => {
+	const [state, setState] = useState<{ month: number; year: number }>({
+		month: new Date().getMonth() + 1,
+		year: new Date().getFullYear(),
+	})
+
+	const [search] = useSearchParams();
+
+	const meter_id = search.get('meterId');
+	// const {data, error, isLoading} = useQuery('fetchPowerConsumptionHistory', () =>fetchPowerConsumptionHistory(meterId))
+	const { data: graphData, error, isLoading, mutate } = useMutation(
+		'fetchPowerConsumptionHistoryGraph',
+		fetchPowerConsumptionHistoryGraph
+	)
+	const resultOfLatestUpdatedTime = useQuery('fetchPowerConsumptionHistoryGraphLastUpdated', () => fetchPowerConsumptionHistoryGraphLastUpdated())
+	const values = graphData?.map((item) =>
+		(Math.abs(item?.sum?.energy_wh_import) / 1000).toFixed(2)
+	)
+
+	const unitPrice = graphData?.map((item) => {
+		return ((Math.abs(item?.sum?.energy_wh_import) / 1000) * data?.unit_rate).toFixed(2)
+	}
+	)
+	const xaxis = graphData?.map((item) =>
+		format(new Date(item.date), 'yyyy-MM-dd')
+	)
+	useEffect(() => {
+		mutate({ month: state.month, year: state?.year, meter_id })
+	}, [])
+
+	const handleSubmit = (e) => {
+		e.preventDefault()
+		mutate({ month: state.month, year: state?.year, meter_id })
+	}
+
+	return (
+		<Card sx={{ borderRadius: 3 }}>
+			{/* <ChartWrapper
+				title='Power consumption history - month wise in kWh'
+				time={resultOfLatestUpdatedTime && resultOfLatestUpdatedTime.data && add5Hr30Min(resultOfLatestUpdatedTime?.data)}
+			> */}
+			<Grid md={12} container mb={5}>
+				<Grid md={8} >
+					<CardHeader
+						title='Power consumption history - month wise in kWh'
+						time={resultOfLatestUpdatedTime && resultOfLatestUpdatedTime.data && add5Hr30Min(resultOfLatestUpdatedTime?.data)}
+						sx={{ fontSize: 14 }}
+					/>
+				</Grid>
+				<Grid md={4} sx={{  pt: 2,pl:7 }} >
+					<form className='flex gap-2' onSubmit={handleSubmit}>
+						<TextField
+							select
+							size='small'
+							variant='outlined'
+							value={state.month}
+							onChange={(e: any) => setState({ ...state, month: e.target.value })}
+						>
+							{getListOfMonths(state?.year).map((item) => (
+								<MenuItem value={item.value}>{item.name}</MenuItem>
+							))}
+						</TextField>
+						<TextField
+							select
+							size='small'
+							variant='outlined'
+							value={state.year}
+							onChange={(e: any) => setState({ ...state, year: e.target.value })}
+						>
+							{getListOfLast10Years().map((item) => (
+								<MenuItem value={item}>{item}</MenuItem>
+							))}
+						</TextField>
+						<Button
+							type='submit'
+							color='primary'
+							variant='contained'
+							size='small'
+						>
+							Submit
+						</Button>
+					</form>
+				</Grid>
+			</Grid>
+			{!isLoading ? (<Chart className="apex_chart_override"
+				height={500}
+				type='bar'
+				
+				options={{
+					chart: { id: 'monthly-consumption' },
+					// fill: {
+					// 	colors: ['#407ddd']
+					//   },
+					//   stroke: {
+					// 	  colors: ['#407ddd']
+					//   },
+
+					xaxis: {
+						categories: xaxis,
+						title: { text: 'Month', style: { fontSize: '12px' } },
+						labels: {
+							show: true,
+							rotate: -45,
+							rotateAlways: false,
+							style: {
+								fontSize: '12px',
+							},
+						},
+					},
+					yaxis: {
+						title: {
+							text: `Power consumption (kWh)`,
+							style: { fontSize: '12px' },
+						},
+						labels: {
+							style: {
+								fontSize: '12px',
+							},
+						},
+					},
+					dataLabels: {
+						style: {
+							fontSize: '12px',
+						},
+						formatter: function (val) {
+							return val + 'kWh'
+						},
+					},
+					plotOptions: {
+						bar: {
+							columnWidth: `${xaxis?.length + 5}+ '%'`,
+						},
+					},
+					colors:['#407ddd','#dee2e6'],
+					...chartOptions,
+				}}
+				series={[
+					{
+						name: 'KWh',
+						data: values,
+					},
+					{
+						name: `Price (1kWh = Rs.${data?.unit_rate})`,
+						data: unitPrice,
+					}
+				]}
+			/>) : (
+				<Grid style={{ height: '500px' }}>
+					<CircularProgress />
+				</Grid>
+			)}
+			{/* </ChartWrapper> */}
+
+		</Card>
+	)
+}
+
+export default Monthly
+
+const chartOptions: ApexOptions = {
+	legend: {
+		position: 'top',
+		offsetY: 0,
+	},
+	stroke: {
+		width: 2.5,
+	},
+	dataLabels: {
+		enabled: true,
+		offsetY: -20,
+		style: {
+			colors: ['#2297e5'],
+		},
+	},
+	chart: {
+		toolbar: {
+			tools: {
+				download: false,
+			},
+		},
+	},
+	plotOptions: {
+		bar: {
+			dataLabels: {
+				position: 'top',
+			},
+		},
+	},
+	tooltip: {
+		style: {
+			fontSize: '12px',
+		},
+	}
+}

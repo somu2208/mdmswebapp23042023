@@ -1,0 +1,410 @@
+import { Edit, Visibility } from '@mui/icons-material'
+import { CircularProgress, Pagination } from '@mui/material'
+import { exportCustomerLit } from 'api/services/customers'
+import ExportToExcel from 'components/ExportToExcel'
+import { PowerOff, PowerOn } from 'components/icons'
+import Table from 'components/NewTable'
+import TableWrapper from 'components/TableWrapper'
+import add from 'date-fns/add'
+import format from 'date-fns/format'
+import { result } from 'lodash'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import LookUpFilters from '../LookUpFilters'
+import { useCustomers } from '../Provider'
+import { RemoveRedEye } from '@mui/icons-material'
+import {
+	Grid,
+	Divider as MuiDivider,
+	Typography as MuiTypography,
+	Chip,
+} from "@mui/material";
+import styled from "styled-components/macro";
+import { spacing } from "@mui/system";
+
+
+
+
+const CustomersTable = () => {
+	const [page, setPage] = useState<number>(1)
+	const [limit, setLimit] = useState<number>(100)
+	const navigate = useNavigate()
+	const Typography = styled(MuiTypography)(spacing);
+	const Divider = styled(MuiDivider)(spacing);
+
+	const handleChange = (event, value) => {
+		setPage(value)
+		return mutateCustomerList({ page: value, limit })
+	}
+
+	const {
+		customerList,
+		listLoading: loading,
+		mutateCustomerList,
+		error,
+	} = useCustomers()
+
+	useEffect(() => {
+		mutateCustomerList({ limit, page })
+	}, [])
+
+	return (
+		<Grid>
+			<Typography variant="h3">Customer List</Typography>
+			<Divider my={3} />
+			<Grid>
+
+				<TableWrapper error={error}>
+					<>
+						{loading ? (
+							// <div className='flex items-center justify-center pt-10'>
+							<Grid sx={{ textAlign: "center", pt: 10 }}>
+								<CircularProgress />
+							</Grid>
+						) : (
+							<>
+								{customerList && (
+									<Grid>
+										<Grid sx={{ textAlign: "right" }} mr={2} className='text-sm-count'>
+											<Typography>Total count: {customerList?.meta?.filter_count}</Typography>
+										</Grid>
+										<Table
+											loading={loading}
+											tableData={customerList?.data}
+											columns={columns}
+										/>
+									</Grid>
+								)}
+							</>
+						)}
+					</>
+				</TableWrapper>
+			</Grid>
+		</Grid>
+	)
+}
+
+export default CustomersTable
+
+
+//add 5hr30min to date and format
+export const add5Hr30Min = (date) => {
+	return format(
+		add(new Date(date), {
+			hours: 5,
+			minutes: 30,
+		}),
+		'dd/MM/yyyy hh:mm a'
+	)
+}
+
+
+
+const columns = [
+	{
+		field: 'usc_number',
+		headerName: 'Customer service number',
+		width: 190,
+
+		renderCell: (item) => {
+			if (item?.row?.meter_serial_number) {
+				if (item?.row?.meter_serial_number?.meter_serial_number) {
+					return (
+						<Link
+							to={{
+								pathname: item?.row?.usc_number,
+								search: `?meter_type=${item?.row?.meter_serial_number?.meter_connection_type}&meterId=${item?.row?.meter_serial_number?.meter_serial_number}`,
+							}}
+							className='hover:underline text-blue-600'
+						>
+							{item.row?.usc_number}
+						</Link>
+					)
+				}
+				else {
+					return (
+						<p>{item?.row?.usc_number}</p>
+					)
+				}
+			}
+		}
+
+		// key: 'usc_number',
+		// title: 'Customer service number',
+		// render: (item) => (
+		// 	<>
+		// 		{item?.meter_serial_number?.meter_serial_number ? (
+		// 			<Link
+		// 				to={{
+		// 					pathname: item?.usc_number,
+		// 					search: `?meter_type=${item?.meter_serial_number?.meter_connection_type}&meterId=${item?.meter_serial_number?.meter_serial_number}`,
+		// 				}}
+		// 				className='hover:underline text-blue-600'
+		// 			>
+		// 				{item.usc_number}
+		// 			</Link>
+		// 		) : (
+		// 			<p>{item?.usc_number}</p>
+		// 		)}
+		// 	</>
+		// ),
+		// excelRender: (value) => value,
+	},
+	{
+		field: 'first_name',
+		headerName: 'Customer name',
+		width: 200,
+		// key: 'first_name',
+		// title: 'Customer First Name',
+	},
+	{
+		field: 'address',
+		headerName: 'Address',
+		width: 280,
+		// key: 'address', 
+		// title: 'Address'
+	},
+	{
+		field: 'phone1',
+		headerName: 'Phone',
+		// key: 'phone1', 
+		// title: 'Phone'
+	},
+	{
+		field: 'meter_serial_number',
+		headerName: 'Meter serial number',
+		width: 155,
+		valueGetter: (params) => {
+			// console.log("ppp", { params });
+			let result = [];
+			if (params.row.meter_serial_number) {
+				if (params.row.meter_serial_number.meter_serial_number) {
+					result.push(params.row.meter_serial_number.meter_serial_number);
+				}
+			}
+			return result
+		}
+		// key: 'meter_serial_number.meter_serial_number',
+		// title: 'Meter serial number',
+	},
+	// {
+	// 	key: 'meter_category_4G',
+	// 	title: 'Meter Category',
+	// },
+	// {
+	// 	key: 'relay_status',
+	// 	title: 'Relay status',
+	// 	render: (item) => {
+	// 		const renderComponent = () => {
+	// 			if (item?.meter_serial_number?.relay_status === 'Connected')
+	// 				return <RelayOn />
+	// 			if (item?.meter_serial_number?.relay_status === 'Disconnected')
+	// 				return <RelayOff />
+	// 			return null
+	// 		}
+	// 		return <>{renderComponent()}</>
+	// 	},
+	// },
+
+	{
+		field: 'old_meterid',
+		headerName: 'Old meter id',
+		width: 110,
+		// key: 'old_meterid', 
+		// title: 'Old meter id'
+	},
+	// {key: 'ero_id.ero_name', title: 'ERO name'},
+	{
+		field: 'section_name',
+		headerName: 'Section name',
+		width: 175,
+		valueGetter: (params) => {
+			// console.log("ppp", { params });
+			let result = [];
+			if (params.row.section_id) {
+				if (params.row.section_id.section_name) {
+					result.push(params.row.section_id.section_name);
+				}
+			}
+			return result
+		}
+		// key: 'section_id.section_name', 
+		// title: 'Section name'
+	},
+	{
+		field: 'area_name',
+		headerName: 'Area name',
+		width: 150,
+		hide: 'true',
+		valueGetter: (params) => {
+			// console.log("ppp", { params });
+			let result = [];
+			if (params.row.area_id) {
+				if (params.row.area_id.area_name) {
+					result.push(params.row.area_id.area_name);
+				}
+			}
+			return result
+		}
+		// key: 'area_id.area_name', 
+		// title: 'Area name'
+	},
+	{
+		field: 'consumer_category_name',
+		headerName: 'Category',
+		hide: 'true',
+		valueGetter: (params) => {
+			// console.log("ppp", { params });
+			let result = [];
+			if (params.row.consumer_category) {
+				if (params.row.consumer_category.consumer_category_name) {
+					result.push(params.row.consumer_category.consumer_category_name);
+				}
+			}
+			return result
+		}
+		// key: 'consumer_category.consumer_category_name', 
+		// title: 'Category'
+	},
+	{
+		field: 'sub_group_name',
+		headerName: 'Sub group',
+		hide: 'true',
+		valueGetter: (params) => {
+			// console.log("ppp", { params });
+			let result = [];
+			if (params.row.sub_group) {
+				if (params.row.sub_group.sub_group_name) {
+					result.push(params.row.sub_group.sub_group_name);
+				}
+			}
+			return result
+		}
+		// key: 'sub_group.sub_group_name', 
+		// title: 'Sub group'
+	},
+	{
+		field: 'phase_name',
+		headerName: 'Phase',
+		valueGetter: (params) => {
+			let result = [];
+			if (params.row.consumer_phase_id) {
+				if (params.row.consumer_phase_id.phase_name) {
+					result.push(params.row.consumer_phase_id.phase_name);
+				}
+			}
+			return result;
+		}
+		// key: 'consumer_phase_id.phase_name', 
+		// title: 'Phase'
+	},
+	// {key: 'meter_serial_number.meter_status', title: 'Meter status'},
+	{
+		field: 'latest_sync_date',
+		headerName: 'Latest updated time',
+		width: 175,
+		renderCell: (item) => {
+			if (item?.row?.meter_serial_number) {
+				if (item?.row?.meter_serial_number.latest_sync_date) {
+					const value = (item?.row?.meter_serial_number.latest_sync_date) && add5Hr30Min(item?.row?.meter_serial_number.latest_sync_date);
+					return (value);
+				}
+			}
+		}
+		// key: 'meter_serial_number.latest_sync_date',
+		// title: 'Latest updated time',
+		// render: (item) =>
+		// 	item?.meter_serial_number?.latest_sync_date
+		// 		? format(
+		// 				add(new Date(item?.meter_serial_number?.latest_sync_date), {
+		// 					hours: 5,
+		// 					minutes: 30,
+		// 				}),
+		// 				'dd/MM/yyyy hh:mm a'
+		// 		  )
+		// 		: '-',
+		// excelRender: (value) =>
+		// 	value
+		// 		? format(
+		// 				add(new Date(value), {
+		// 					hours: 5,
+		// 					minutes: 30,
+		// 				}),
+		// 				'dd/MM/yyyy hh:mm a'
+		// 		  )
+		// 		: '-',
+	},
+	{
+		field: 'power_status',
+		headerName: 'Status',
+
+		renderCell: (item) => {
+			if (item?.row?.meter_serial_number) {
+				if (item?.row?.meter_serial_number?.power_status === 'On') {
+					// return (<PowerOn />);
+					return (
+						<Chip label="Active" color="success" className="statusbox" />
+					)
+				} else {
+					// return (<PowerOff />)
+					return (
+						<Chip label="Inactive" color="warning" className="statusbox" />
+					)
+				}
+			}
+		}
+
+
+
+
+
+		//field: 'power_status',
+		//headerName: 'Power status',
+		//valueGetter: (params) => {
+		// console.log("ppp", { params });
+		//let result = [];
+		//if (params.row.meter_serial_number) {
+		//if (params.row.meter_serial_number.power_status) {
+		//result.push(params.row.meter_serial_number.power_status);
+		//}
+		//}
+		//return result
+
+		// key: 'meter_serial_number.power_status',
+		// title: 'Power status',
+		// render: (item) => {
+		// 	const renderComponent = () => {
+		// 		if (item?.meter_serial_number?.power_status === 'On') return <PowerOn />
+		// 		if (item?.meter_serial_number?.power_status === 'Off')
+		// 			return <PowerOff />
+		// 		return null
+		// 	}
+		// 	return <>{renderComponent()}</>
+		// },
+		// excelRender: (value) => value,
+	},
+	{
+		field: 'action',
+		headerName: 'Action',
+		width: 100,
+		renderCell: (item) => {
+			return (
+				<>
+					<Link
+						to={`${item?.row?.usc_number}/view`}
+						className='hover:underline pr-5'
+					>
+						<RemoveRedEye />{''}
+					</Link>
+					<Link
+						to={`${item?.row?.usc_number}/edit`}
+						className='hover:underline'
+					>
+						<Edit />{''}
+					</Link>
+				</>
+			)
+		}
+
+	}
+]

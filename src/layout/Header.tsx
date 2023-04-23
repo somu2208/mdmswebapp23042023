@@ -1,0 +1,126 @@
+import {
+	Grid,
+	InputBase,
+	AppBar as MuiAppBar,
+	IconButton as MuiIconButton,
+	Toolbar,
+} from "@mui/material";
+import { Search as SearchIcon } from "react-feather";
+import styled, { withTheme } from "styled-components/macro";
+import * as React from "react";
+import { Menu as MenuIcon } from "@mui/icons-material";
+import { darken } from "polished";
+
+import AccountMenu from './AccountMenu'
+import NavbarNotificationsDropdown from "./NavbarNotificationsDropdown";
+import NavbarMessagesDropdown from "./NavbarMessagesDropdown";
+import NavbarLanguagesDropdown from "./NavbarLanguagesDropdown";
+import NavbarUserDropdown from "./NavbarUserDropdown";
+
+
+const AppBar = styled(MuiAppBar)`
+  background: white;
+  color: black;
+  position: sticky;
+`;
+
+const IconButton = styled(MuiIconButton)`
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+`;
+
+const Search = styled.div`
+  border-radius: 2px;
+  background-color: #FFF;
+  display: none;
+  position: relative;
+  width: 100%;
+
+  &:hover {
+    background-color: #E4E4E4;
+  }
+	display: block;
+  
+`;
+
+const SearchIconWrapper = styled.div`
+  width: 50px;
+  height: 100%;
+  position: absolute;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9e9e9e;
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+`;
+
+const Input = styled(InputBase)`
+  color: inherit;
+  width: 100%;
+
+  > input {
+    color: #424242;
+    padding-top: 10px;
+    padding-right: 10px;
+    padding-bottom: 10px;
+    padding-left: 48px;
+    width: 160px;
+  }
+`;
+
+
+const Header = ({ title, onDrawerToggle }) => {
+	return (
+		// <header className='shadow-md flex items-center justify-between h-16 bg-primary px-5 border-b border-gray-100 border-opacity-30'>
+		// 	<div className='flex gap-2 items-center text-white'>
+		// 		<h1 className='font-bold'>{title}</h1>
+		// 	</div>
+		// 	<div className=''>
+		// 		<AccountMenu />
+		// 	</div>
+		// </header>
+		<React.Fragment>
+			{/* <AppBar position="sticky" elevation={0}>
+				<Toolbar>
+					<Grid container alignItems="center">
+						<Grid item sx={{ display: { xs: "block", md: "none" } }}>
+						  <IconButton
+							color="inherit"
+							aria-label="Open drawer"
+							onClick={onDrawerToggle}
+							size="large"
+						  >
+							<MenuIcon />
+						  </IconButton>
+						</Grid>
+						<Grid item>
+							<Search>
+								<SearchIconWrapper>
+								  <SearchIcon />
+								</SearchIconWrapper>
+								<Input placeholder={"Search"} />
+							</Search>
+						</Grid>
+						<Grid item xs />
+						<Grid item>
+						//<AccountMenu />
+							<NavbarMessagesDropdown />
+							<NavbarNotificationsDropdown />
+							<NavbarLanguagesDropdown />
+							<NavbarUserDropdown />
+						</Grid>
+					</Grid>
+				</Toolbar>
+			</AppBar> */}
+		</React.Fragment>
+	)
+}
+
+export default Header

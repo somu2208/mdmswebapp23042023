@@ -1,0 +1,159 @@
+import {createTheme, ThemeOptions} from '@mui/material'
+import { green, grey, indigo, red } from "@mui/material/colors"
+const FONT_FAMILY = ['Inter','-apple-system','BlinkMacSystemFont',"Segoe UI",'Roboto',"Helvetica Neue",'Arial,sans-serif',"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol"].join(',')
+
+const themeOptions: ThemeOptions = {
+	palette: {
+		primary: {
+			//main: 'rgb(244,149,31)',
+			light: 'rgba(244,149,31, 0.1)',
+			main: 'rgb(59 125 221)',
+		},
+		secondary: {
+			main: 'rgb(36, 36, 36)',
+			light: 'rgba(36, 36, 36, 0.1)',
+		},
+	},
+	breakpoints :{
+	  values: {
+		xs: 0,
+		sm: 600,
+		md: 960,
+		lg: 1280,
+		xl: 1440,
+	  },
+	},
+	typography: {
+		  fontFamily: FONT_FAMILY,
+		  fontSize: 13,
+		  fontWeightLight: 300,
+		  fontWeightRegular: 400,
+		  fontWeightMedium: 500,
+		  fontWeightBold: 600,
+		  h1: {
+			fontSize: "2rem",
+			fontWeight: 600,
+			lineHeight: 1.25,
+		  },
+		  h2: {
+			fontSize: "1.75rem",
+			fontWeight: 600,
+			lineHeight: 1.25,
+		  },
+		  h3: {
+			fontSize: "1.5rem",
+			fontWeight: 600,
+			lineHeight: 1.25,
+		  },
+		  h4: {
+			fontSize: "1.125rem",
+			fontWeight: 500,
+			lineHeight: 1.25,
+		  },
+		  h5: {
+			fontSize: "1.0625rem",
+			fontWeight: 500,
+			lineHeight: 1.25,
+		  },
+		  h6: {
+			fontSize: "1rem",
+			fontWeight: 500,
+			lineHeight: 1.25,
+		  },
+		  body1: {
+			fontSize: 13,
+		  },
+		  button: {
+			textTransform: "none",
+		  },
+	},
+	
+	components: {
+		MuiGrid: {
+			styleOverrides: {
+				root: { 
+					fontFamily: FONT_FAMILY
+				}
+			}		
+		},
+		MuiListItemIcon : {
+			styleOverrides: {
+				root: { 
+					color: grey[500],
+					fontSize: 24
+				}
+			}
+		},
+		MuiListItemText : {
+			styleOverrides: {
+				root: { 
+					color: grey[200]
+				}
+			}
+		},
+		MuiButton: {
+			styleOverrides: {
+				root: {
+					fontFamily: FONT_FAMILY,
+					fontSize: '1rem',
+					textTransform: 'capitalize',
+					fontWeight: 'bold',
+					color:'#233044'
+				},
+				contained: {
+					color: 'white',
+				},
+			},
+		},
+		MuiButtonBase: {
+			defaultProps: {
+				disableRipple: true,
+			},
+		},
+		MuiLink: {
+			defaultProps: {
+				underline: "hover",
+			},
+		},
+		MuiCardHeader: {
+			defaultProps: {
+				titleTypographyProps: {
+					variant: "h6",
+				},
+			},
+			styleOverrides: {
+				action: {
+					marginTop: "-4px",
+					marginRight: "-4px",
+				},
+			},
+		},
+		MuiCard: {
+			styleOverrides: {
+				root: {
+					borderRadius: "6px",
+					boxShadow: "rgba(50, 50, 93, 0.025) 0px 2px 5px -1px, rgba(0, 0, 0, 0.05) 0px 1px 3px -1px",
+					backgroundImage: "none",
+				},
+			},
+		},
+		MuiPaper: {
+			styleOverrides: {
+				root: {
+					backgroundImage: "none",
+				},
+			},
+		},
+		MuiSwitchBase:{
+			styleOverrides: {
+				root: {
+					color: "#233044",
+				},
+			},
+		}
+	}	
+}
+
+const theme = createTheme(themeOptions)
+
+export default theme

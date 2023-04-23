@@ -1,0 +1,317 @@
+import { CircularProgress, Pagination, Typography, Grid, Divider } from '@mui/material'
+import { exportMeter360Data, fetchMeter360Data } from 'api/services/meters'
+import CsvExport from 'components/CsvExport'
+import ExportToExcel from 'components/ExportToExcel'
+import Table from 'components/table'
+import { format } from 'date-fns'
+import { useEffect, useState } from 'react'
+import { useMutation } from 'react-query'
+import { useParams, useSearchParams } from 'react-router-dom'
+import { add5Hr30Min } from 'utils'
+import Filters from './Filters'
+import { useMeterData } from './_DataProvider'
+
+const BlockLoad = () => {
+	const { fromDate, toDate } = useMeterData()
+	const [search] = useSearchParams()
+	const phaseId = search.get('phase')
+	const [page, setPage] = useState(1)
+	const params = useParams()
+
+	const meterId = params.meterId
+	const handleChange = (event, value) => {
+		setPage(value)
+		return mutate({
+			page: value,
+			fromDate,
+			toDate,
+			meterId: params.meterId,
+			key,
+		})
+	}
+
+	const {
+		data,
+		error,
+		isLoading: loading,
+		mutate,
+	} = useMutation('Blockmeter360Data', fetchMeter360Data)
+
+	const key =
+		phaseId === '1'
+			? 'meter_block_load_profile_single_phase'
+			: 'meter_block_load_profile_three_phase'
+
+	const handleExport = async () => {
+		if (!fromDate || !toDate) return
+		const data = await exportMeter360Data({ key, fromDate, toDate, meterId })
+		return data
+	}
+
+	useEffect(() => {
+		mutate({
+			fromDate,
+			toDate,
+			key,
+			meterId: params.meterId,
+			page,
+		})
+	}, [])
+
+	if (error) return <Grid>Server Error</Grid>
+	return (
+		<>
+				<Grid className='pb-2 flex justify-end items-center gap-2 innnerbox'>
+					{/* <ExportToExcel
+					asyncExportMethod={handleExport}
+					labels={
+						phaseId === '1' ? blockLoadPhase1columns : blockLoadPhase2columns
+					}
+					/> */}
+					<Filters
+						mutate={() =>
+							mutate({
+								fromDate,
+								toDate,
+								key,
+								meterId: params.meterId,
+								page,
+							})
+						}
+						page={page}
+						key={key}
+					/>
+				</Grid>
+				
+				{loading ? (
+					<CircularProgress />
+				) : (
+					<Grid sx={{ backgroundColor: "white", p: 2 }} className="rounded-lg" mt={5}>
+						<Grid className='text-sm-count text-right'>
+							<Typography>Total Count: {data?.meta?.filter_count}</Typography>
+						</Grid>
+						{data ? (
+							<>
+								{phaseId === '1' && (
+									<Grid>
+										<Table
+											tableData={data.data}
+											columns={blockLoadPhase1columns}
+											loading={loading}
+										/>
+									</Grid>
+								)}
+								{phaseId === '2' && (
+									<Table
+										tableData={data.data}
+										columns={blockLoadPhase2columns}
+										loading={loading}
+									/>
+								)}
+
+								{/* <div className='flex justify-between mt-5'>
+								<p className='text-gray-600'>{`Page : ${page}/${Math.ceil(
+									data?.meta?.filter_count / 10
+								)}`}</p>
+								<Pagination
+									variant='outlined'
+									shape='rounded'
+									count={Math.ceil(data?.meta?.filter_count / 10)}
+									page={page}
+									onChange={handleChange}
+								/>
+							</div> */}
+							</>
+						) : (
+							<Typography className='text-center mt-8'>No records found</Typography>
+						)}
+					</Grid>
+				)}
+			
+		</>
+	)
+}
+
+export default BlockLoad
+
+export const blockLoadPhase1columns = [
+	{
+		field: 'meter_serial_number',
+		headerName: 'Meter Serial Number',
+		// key: 'meter_serial_number', 
+		// title: 'Meter Serial Number'
+	},
+	{
+		field: 'source_timestamp',
+		headerName: 'Meter Timestamp',
+		// key: 'source_timestamp',
+		// title: 'Meter Timestamp',
+		render: (value) => value && add5Hr30Min(value),
+	},
+	{
+		field: 'server_timestamp',
+		headerName: 'Server Timestamp',
+		// key: 'server_timestamp',
+		// title: 'Server Timestamp',
+		render: (value) => value && add5Hr30Min(value),
+	},
+	{
+		field: 'average_voltage',
+		headerName: 'Average Voltage(V)',
+		// key: 'average_voltage',
+		// title: 'Average Voltage(V)',
+		render: (value) => (value / 100).toFixed(2),
+	},
+
+	{
+		field: 'block_energy_kWh_import',
+		headerName: 'Block Energy kWh Import',
+		// key: 'block_energy_kWh_import',
+		// title: 'Block Energy kWh Import',
+		render: (value) => (value / 100).toFixed(2),
+	},
+	{
+		field: 'block_energy_kWh_export',
+		headerName: 'Block Energy kWh Export',
+		// key: 'block_energy_kWh_export',
+		// title: 'Block Energy kWh Export',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'block_energy_VAh_import',
+		headerName: 'Block Energy VAh Import',
+		// key: 'block_energy_VAh_import',
+		// title: 'Block Energy VAh Import',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'block_energy_VAh_export',
+		headerName: 'Block Energy VAh Export',
+		hide: 'true',
+		// key: 'block_energy_VAh_export',
+		// title: 'Block Energy VAh Export',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	// {key: 'meter_health_indicator', title: 'Meter Health Indicator'},
+	// {key: 'average_signal_strength', title: 'Average Signal Strength'},
+	{
+		field: 'average_current',
+		headerName: 'Average Current(A)',
+		hide: 'true',
+		// key: 'average_current',
+		// title: 'Average Current(A)',
+		render: (value) => (value / 100).toFixed(2),
+	},
+]
+
+export const blockLoadPhase2columns = [
+	{
+		field: 'meter_serial_number',
+		headerName: 'Meter Serial Number',
+		// key: 'meter_serial_number', 
+		// title: 'Meter Serial Number'
+	},
+	{
+		field: 'source_timestamp',
+		headerName: 'Meter Timestamp',
+		// key: 'source_timestamp',
+		// title: 'Meter Timestamp',
+		render: (value) => value && add5Hr30Min(value),
+	},
+	{
+		field: 'server_timestamp',
+		headerName: 'Server Timestamp',
+		// key: 'server_timestamp',
+		// title: 'Server Timestamp',
+		render: (value) => value && add5Hr30Min(value),
+	},
+	// {key: 'current_lr', title: 'Current Lr'},
+	{
+		field: 'average_voltage',
+		headerName: 'Average Voltage(V)',
+		// key: 'average_voltage',
+		// title: 'Average Voltage(V)',
+		render: (value) => (value / 100).toFixed(2),
+	},
+	{
+		field: 'block_energy_Wh_import',
+		headerName: 'Energy KWh Import',
+		// key: 'block_energy_Wh_import',
+		// title: 'Energy KWh Import',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'block_energy_Wh_export',
+		headerName: 'Energy KWh Export',
+		// key: 'block_energy_Wh_export',
+		// title: 'Energy KWh Export',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'block_energy_VAh_import',
+		headerName: 'Energy KVAh Import',
+		// key: 'block_energy_VAh_import',
+		// title: 'Energy KVAh Import',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'block_energy_VAh_export',
+		headerName: 'Energy KVAh Export',
+		hide: 'true',
+		// key: 'block_energy_VAh_export',
+		// title: 'Energy KVAh Export',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'current_ly',
+		headerName: 'Current ly(A)',
+		hide: 'true',
+		// key: 'current_ly',
+		// title: 'Current ly(A)',
+		render: (value) => (value / 100).toFixed(2),
+	},
+	{
+		field: 'current_lb',
+		headerName: 'Current lb(A)',
+		hide: 'true',
+		// key: 'current_lb',
+		// title: 'Current lb(A)',
+		render: (value) => (value / 100).toFixed(2),
+	},
+	{
+		field: 'current_lr',
+		headerName: 'Current lr(A)',
+		hide: 'true',
+		// key: 'current_lr',
+		// title: 'Current lr(A)',
+		render: (value) => (value / 100).toFixed(2),
+	},
+	{
+		field: 'voltage_vrn',
+		headerName: 'Voltage Vrn(V)',
+		hide: 'true',
+		// key: 'voltage_vrn',
+		// title: 'Voltage Vrn(V)',
+		render: (value) => (value / 10).toFixed(2),
+	},
+	{
+		field: 'voltage_vyn',
+		headerName: 'Voltage Vyn(V)',
+		hide: 'true',
+		// key: 'voltage_vyn',
+		// title: 'Voltage Vyn(V)',
+		render: (value) => (value / 10).toFixed(2),
+	},
+	{
+		field: 'voltage_vbn',
+		headerName: 'Voltage Vbn(V)',
+		hide: 'true',
+		// key: 'voltage_vbn',
+		// title: 'Voltage Vbn(V)',
+		render: (value) => (value / 10).toFixed(2),
+	},
+	// {key: 'meter_health_indicator', title: 'Meter Health Indicator'},
+	// {key: 'average_signal_strength', title: 'Average Signal Strength'},
+	// {key: 'status_byte', title: 'Status Byte'},
+	// {key: 'utility_id', title: 'Utility ID'},
+]

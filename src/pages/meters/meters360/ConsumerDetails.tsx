@@ -1,0 +1,191 @@
+import {CircularProgress, Grid, Typography, Box, TextField as MuiTextField,} from '@mui/material'
+import {fetchCustomerViewDetails} from 'api/services/customers'
+import {useQuery, UseQueryResult} from 'react-query'
+import {useSearchParams} from 'react-router-dom'
+import styled from "styled-components/macro";
+import { spacing } from "@mui/system";
+
+const ConsumerDetails = () => {
+	const [search] = useSearchParams()
+	const consumerId = search.get('customerId')
+	
+	const TextFieldSpacing = styled(MuiTextField)(spacing);
+	const TextField = styled(TextFieldSpacing)`width: 100%;background-color: #efefef8a`;
+	
+	const {data, isLoading, error}: UseQueryResult<any, Error> = useQuery(
+		['customer-view-details', consumerId],
+		fetchCustomerViewDetails
+	)
+
+	if (isLoading) {
+		return (
+			<Grid className='flex items-center justify-center w-full h-screen'>
+				<CircularProgress />
+			</Grid>
+		)
+	}
+
+	if (error) {
+		// return <div className='text-lg text-gray-700 p-4'>{error?.message}</div>
+		return <Grid p={4} sx={{color:"gray[700]"}}> {error?.message} </Grid>
+	}
+
+	return (
+		<>
+			{getFormattedData(data?.data?.data[0]).map((item, index) => (
+				<Box sx={{backgroundColor:"white", border: "1px solid #e5e7eb"}} mt={0} pb={5} key={index}>
+					<Grid mt={1} className='justify-between'>
+						<Typography variant="h5" p={3}> {item.title} </Typography>
+					</Grid>
+					<Grid container className='px-5' mt={1}>
+						{item.values.map((item, index) => (
+							<Grid item xs={4} key={index}>
+								{/* <div className='mb-4 p-2'> */}
+								<Grid mb={1} p={1}>
+									{/* <h6 className='text-sm text-gray-500 mb-1.5'>{item.label}</h6> 
+									<Typography variant="h6" mb={1}> {item.label} </Typography>*/}
+									{/* <h4>{item.value}</h4> 
+									<Typography> {item.value?item.value:'NA'} </Typography>*/}
+									
+									<TextField
+										value={item.value?item.value:'NA'}
+										label={item.label}
+										id="standard-read-only-input"
+										variant="outlined"	
+										InputLabelProps={{
+											shrink: true,
+										}}
+										InputProps={{
+											readOnly: true,
+										}}
+										className="label-data-box"
+									/>
+									
+								</Grid>
+							</Grid>
+						))}
+					</Grid>
+				</Box>
+			))}
+		</>
+	)
+}
+
+export default ConsumerDetails
+
+const getFormattedData = (data) => [
+	{
+		title: 'Customer details',
+		values: [
+			{
+				label: 'Customer Service Number',
+				value: data?.usc_number || 'NA',
+			},
+			{
+				label: 'Customer Name',
+				value: `${data?.first_name} ${data?.laste_name || ''}`,
+			},
+			{
+				label: 'Customer Phone Number',
+				value: data?.phone1 || 'NA',
+			},
+			{
+				label: 'Customer Address',
+				value: data?.address || 'NA',
+			},
+			{
+				label: 'Customer State',
+				value: data?.state || 'NA',
+			},
+			{
+				label: 'Customer City',
+				value: data?.city || 'NA',
+			},
+			{
+				label: 'Customer Pincode',
+				value: data?.pincode || 'NA',
+			},
+			{
+				label: 'Customer Type',
+				value: data?.consumer_type_id?.type_name || 'NA',
+			},
+			{
+				label: 'Customer Category',
+				value: data?.consumer_category?.consumer_category_name || 'NA',
+			},
+			{
+				label: 'Customer Classification',
+				value: data?.preorpostpaid?.meter_type_name || 'NA',
+			},
+			{
+				label: 'Customer Phase',
+				value: data?.consumer_phase_id?.phase_name || 'NA',
+			},
+		],
+	},
+	{
+		title: 'Hierarchy details',
+		values: [
+			{
+				label: 'Consumer Utility',
+				value: data?.utility_id?.utility_name || 'NA',
+			},
+			{
+				label: 'Consumer Section',
+				value: data?.section_id?.section_name || 'NA',
+			},
+			{
+				label: 'Consumer Area',
+				value: data?.area_id?.area_name || 'NA',
+			},
+			{
+				label: 'Consumer ERO',
+				value: data?.ero_id?.ero_name || 'NA',
+			},
+			{
+				label: 'Consumer SubGroup',
+				value: data?.sub_group?.sub_group_name || 'NA',
+			},
+			{
+				label: 'Zone Id and  Name',
+				value: data?.zone_id
+					? `${data?.zone_id?.zone_id} - ${data?.zone_id?.zone_name}`
+					: 'NA',
+			},
+			{
+				label: 'Circle_Id and Name',
+				value: data?.circle_id
+					? `${data?.circle_id?.circle_id} - ${data?.circle_id?.circle_name}`
+					: 'NA',
+			},
+			{
+				label: 'Division_Id and Name',
+				value: data?.division_id
+					? `${data?.division_id?.division_id} - ${data?.division_id?.division_name}`
+					: 'NA',
+			},
+			{
+				label: 'Sub_Division_Id and Name',
+				value: data?.sub_division_id
+					? `${data?.sub_division_id?.sub_division_id} - ${data?.sub_division_id?.sub_division_name}`
+					: 'NA',
+			},
+			{
+				label: 'Sub_Station Id and Name',
+				value: data?.sub_station_id
+					? `${data?.sub_station_id?.sub_station_id} - ${data?.sub_station_id?.sub_station_name}`
+					: 'NA',
+			},
+			{
+				label: 'Feeder_Id and Name',
+				value: data?.feeder_id
+					? `${data?.feeder_id?.feeder_id} - ${data?.feeder_id?.feeder_name}`
+					: 'NA',
+			},
+			{
+				label: 'Transformer Id and Name',
+				value: `${data?.dt_id?.dt_id} - ${data?.dt_id?.dt_name || 'NA'}`,
+			},
+		],
+	},
+]

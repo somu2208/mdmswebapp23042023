@@ -1,0 +1,95 @@
+import Card from '../components/DetailsCard'
+import {Box, Tabs, Tab, Typography, CircularProgress} from '@mui/material'
+import {useState} from 'react'
+import Daily from './Daily'
+import Monthly from './Monthly'
+import Yearly from './Yearly'
+import {useQuery} from 'react-query'
+import {useSearchParams} from 'react-router-dom'
+import {format} from 'date-fns'
+import {fetchLatestTimeCustomerPowerConsumption} from 'api/services/customers'
+import { add5Hr30Min } from 'utils'
+
+const CustomerPowerConsumption = () => {
+	const [value, setValue] = useState(0)
+	const [search] = useSearchParams()
+
+	const handleChange = (event, newValue) => {
+		setValue(newValue)
+	}
+
+	const {data, isLoading} = useQuery('customerPowerConsLastestTime', () =>
+		fetchLatestTimeCustomerPowerConsumption(search.get('meterId'))
+	)
+	
+	const formatdate = (date: any) => {
+		return data ? add5Hr30Min(date) : '-'
+	}
+	
+	if (isLoading) return <CircularProgress />
+
+	return (
+		<Card
+			title='Customer power consumption'
+			subtitle={
+				'Latest Updated Time: ' + formatdate(data)
+			}
+		>
+			{search.get('meterId') ? (
+				<div className=' min-h-[600px]'>
+					<Box sx={{borderBottom: 1, borderColor: 'divider'}}>
+						<Tabs
+							value={value}
+							onChange={handleChange}
+							aria-label='basic tabs example'
+							className="meter-data-navigation-2"
+						>
+							<Tab label='Day' {...a11yProps(0)} />
+							<Tab label='Monthly' {...a11yProps(1)} />
+							<Tab label='Year' {...a11yProps(2)} />
+						</Tabs>
+					</Box>
+					<TabPanel value={value} index={0}>
+						<Daily />
+					</TabPanel>
+					<TabPanel value={value} index={1}>
+						<Monthly />
+					</TabPanel>
+					<TabPanel value={value} index={2}>
+						<Yearly />
+					</TabPanel>
+				</div>
+			) : (
+				<Typography>There is no meter for this customer</Typography>
+			)}
+		</Card>
+	)
+}
+
+export default CustomerPowerConsumption
+
+function TabPanel(props) {
+	const {children, value, index, ...other} = props
+
+	return (
+		<div
+			role='tabpanel'
+			hidden={value !== index}
+			id={`simple-tabpanel-${index}`}
+			aria-labelledby={`simple-tab-${index}`}
+			{...other}
+		>
+			{value === index && (
+				<Box sx={{p: 1}}>
+					<Typography>{children}</Typography>
+				</Box>
+			)}
+		</div>
+	)
+}
+function a11yProps(index) {
+	return {
+		id: `simple-tab-${index}`,
+		'aria-controls': `simple-tabpanel-${index}`,
+	}
+}

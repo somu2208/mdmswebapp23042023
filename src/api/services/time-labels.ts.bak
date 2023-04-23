@@ -1,0 +1,167 @@
+import http, {utilityId} from 'api/http'
+import {access_token} from '../http'
+
+export const fetchLatestDateTimeForDataSync = async () => {
+	return http.get('/items/meters_data_sync', {
+		params: {
+			access_token,
+			limit: 1,
+			sort: '-server_date_time',
+			fields: 'server_date_time',
+		},
+	})
+}
+
+export const fetchInstantaneousLasteDateTimeForDataSync = async ({
+	meterTypeKey,
+	meterId,
+}: {
+	meterTypeKey: '1' | '2'
+	meterId: string
+}) => {
+	const getData = async (url) => {
+		return await http.get(`/items/${url}`, {
+			params: {
+				access_token,
+				fields: 'server_timestamp',
+				sort: '-server_timestamp',
+				limit: 1,
+				filter: {meter_serial_number: {_eq: meterId}},
+			},
+		})
+	}
+
+	if (meterTypeKey === '1') {
+		const [lastSyncTime] =
+			await Promise.all([
+				getData('meter_instantaneous_profile_single_phase'),				
+			])
+
+		return {
+			lastSyncTime: lastSyncTime.data.data[0]?.server_timestamp,			
+		}
+	}
+
+	if (meterTypeKey === '2') {
+		const [lastSyncTime] =
+			await Promise.all([
+				getData('meter_instantaneous_profile_three_phase'),				
+			])
+
+		return {
+			lastSyncTime: lastSyncTime.data.data[0].source_timestamp,			
+		}
+	}
+}
+
+{/*export const fetchPowerConsumptionLasteDateTimeForDataSync = async ({
+	meterTypeKey,
+	meterId,
+}: {
+	meterTypeKey: '1' | '2'
+	meterId: string
+}) => {
+	const getData = async (url) => {
+		return await http.get(`/items/${url}`, {
+			params: {
+				access_token,
+				fields: 'server_timestamp',
+				sort: '-server_timestamp',
+				limit: 1,
+				filter: {meter_serial_number: {_eq: meterId}},
+			},
+		})
+	}
+
+	if (meterTypeKey === '1') {
+		const [lastSyncTime] =
+			await Promise.all([
+				getData('meter_daily_load_data'),				
+			])
+
+		return {
+			lastSyncTime: lastSyncTime.data.data[0]?.server_timestamp,			
+		}
+	}
+
+	if (meterTypeKey === '2') {
+		const [lastSyncTime] =
+			await Promise.all([
+				getData('meter_daily_load_data'),				
+			])
+
+		return {
+			lastSyncTime: lastSyncTime.data.data[0].server_timestamp,			
+		}
+	}
+}*/}
+
+
+export const fetchLatestDateTimeForDataSyncForMeters = async () => {
+	return http.get('/items/meters', {
+		params: {
+			access_token,
+			limit: 1,
+			sort: '-latest_sync_date',
+			fields: 'latest_sync_date',
+		},
+	})
+}
+
+export const fetchLatestDateTimeForDailyLoadSync = async () => {
+	return http.get('/items/meter_daily_load_data', {
+		params: {
+			access_token,
+			limit: 1,
+			sort: '-server_timestamp',
+			fields: 'server_timestamp',
+			filter: {utility_id: {_eq: utilityId}},
+		},
+	})
+}
+
+export const fetchPowerOutageAndTampersLatestSync = async () => {
+	return http.get('/items/all_events_and_data', {
+		params: {
+			access_token,
+			limit: 1,
+			sort: '-server_date_time',
+			fields: 'server_date_time',
+		},
+	})
+}
+
+export const fetchSyncTimeForInactiveMeters = async () => {
+	return http.get('/items/total_4g_meters', {
+		params: {
+			access_token,
+			limit: 1,
+			sort: '-date_updated',
+			fields: 'date_updated',
+		},
+	})
+}
+
+// Fetch time for Single Phase Instantaneous
+export const fetchTimeForInstantSingle = async () => {
+	return http.get('/items/meter_instantaneous_profile_single_phase', {
+		params: {
+			access_token,
+			limit: 1,
+			sort: '-server_timestamp',
+			fields: 'server_timestamp',
+		},
+	})
+}
+
+// Fetch time for Three Phase Instantaneous
+export const fetchTimeForInstantThree = async () => {
+	return http.get('/items/meter_instantaneous_profile_three_phase', {
+		params: {
+			access_token,
+			limit: 1,
+			sort: '-server_timestamp',
+			fields: 'server_timestamp',
+		},
+	})
+}

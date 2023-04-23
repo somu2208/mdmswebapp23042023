@@ -1,0 +1,22 @@
+interface IProps {
+	title?: string
+	children: any
+	time?: string
+}
+
+const ChartWrapper = ({title, children, time}: IProps) => {
+	return (
+		<div className='bg-white border-gray-100 rounded-xl shadow-md min-h-[540px]'>
+			<div className='flex justify-between items-center pr-5 pb-4'>
+				<h5 className='text-x4 font-bold text-secondary p-4 py-5'>{title}</h5>
+				//<div className=''>
+					//<span>Lastest updated time : </span>
+					//<span className='text-sm text-gray-600'>{time}</span>
+				//</div>
+			</div>
+			<div className='px-4 pb-4'>{children}</div>
+		</div>
+	)
+}
+
+export default ChartWrapper

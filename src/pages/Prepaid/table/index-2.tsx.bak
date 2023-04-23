@@ -1,0 +1,529 @@
+import { CircularProgress, Pagination } from '@mui/material'
+import {
+	fetchTotalUnitConsumed,
+	lastUpdateTimeForMeters,
+	latestSyncDateRevenue,
+	totalRevenueGenerated,
+	unitConsumptionReport,
+} from 'api/services/prepaid'
+import ExportExcel from 'components/ExportToXLSX'
+import Table from 'components/NewTable'
+import TableWrapper from 'components/TableWrapper'
+import { useEffect, useState } from 'react'
+import { useQuery } from 'react-query'
+import { Link, useNavigate } from 'react-router-dom'
+import { add5Hr30Min, showLakThousand } from 'utils'
+import excelHeaders from 'utils/prepaidExcelHeaders'
+import LookUpFilters from '../LookUpFilters'
+import { usePrepaid } from '../Provider'
+import { DataGrid, GridValueFormatterParams } from '@mui/x-data-grid';
+
+import {
+  Grid,
+  Divider as MuiDivider,
+  Typography as MuiTypography,
+  Chip,
+} from "@mui/material";
+import styled from "styled-components/macro";
+import { spacing } from "@mui/system";
+import PrepaidStats from "../PrepaidStats";
+import {format} from 'date-fns'
+
+const Divider = styled(MuiDivider)(spacing);
+
+const Typography = styled(MuiTypography)(spacing);
+
+const PrepaidTable = () => {
+	const [page, setPage] = useState<number>(1)
+	// const [limit, setLimit] = useState<number>(100)
+	const [limit, setLimit] = useState([])
+
+	const handleChange = (event, value) => {
+		setPage(value)
+		return mutatePrepaidList({ page: value, limit })
+	}
+
+	const totalUnitConsumed = useQuery('totalUnitConsumed', () =>
+		fetchTotalUnitConsumed()
+	)
+	const latest_sync_date = useQuery('lastUpdateTimeForMeters', () =>
+		lastUpdateTimeForMeters()
+	)
+	const recharge_amount = useQuery('totalRevenueGenerated', () =>
+		totalRevenueGenerated()
+	)
+	const latestSyncDate = useQuery('latestSyncDateRevenue', () =>
+		latestSyncDateRevenue()
+	)
+
+	const {
+		prepaidList,
+		listLoading: loading,
+		mutatePrepaidList,
+		error,
+	} = usePrepaid()
+
+	useEffect(() => {
+		mutatePrepaidList({ limit, page })
+	}, [])
+
+	const dataPrepare = (data) => {
+		return data?.map((item, i) => {
+			const latest_reading_kWhVal =
+				item?.meter_serial_number?.latest_reading_kWh / 1000
+			return {
+				...item,
+				serialnumber: i + 1,
+				usc_number: item.usc_number,
+				total_amount_paid: item?.total_amount_paid?.toFixed(2) || '',
+				...item.meter_serial_number,
+				...item.area_id,
+				...item.ero_id,
+				...item.section_id,
+				...item.consumer_phase_id,
+				latest_reading_kWh: latest_reading_kWhVal || '',
+				current_balance_timestamp: item?.meter_serial_number
+					?.current_balance_timestamp
+					? add5Hr30Min(item?.meter_serial_number?.current_balance_timestamp)
+					: '',
+				current_balance:
+					item?.meter_serial_number?.current_balance?.toFixed(2) || '',
+				date_of_last_recharge: item?.date_of_last_recharge
+					? add5Hr30Min(item?.date_of_last_recharge)
+					: '',
+				totalAmountConsumed:
+					(
+						latest_reading_kWhVal * item?.meter_serial_number?.unit_rate
+					)?.toFixed(2) || '',
+				remainingUnitsLeft:
+					(
+						item?.meter_serial_number?.current_balance /
+						(item?.meter_serial_number?.unit_rate || 1)
+					)?.toFixed(2) || '',
+			}
+		})
+	}
+
+	return (
+		<Grid justifyContent="space-between" container spacing={6}>
+			<Grid item xs={12} lg={12}>
+				<Typography variant="h3" gutterBottom>
+					Prepaid
+				</Typography>
+				<Divider my={3} />			
+				<Grid container spacing={6}>
+					<Grid item xs={12} sm={12} md={4}>
+						<PrepaidStats 
+							title="Total Units Consumed"
+							totalamount={(totalUnitConsumed?.data / 1000)?.toFixed(2) || 0.0}
+							unittext="kWh"
+							unittext2=""
+							illustration=""
+							statstime={latest_sync_date?.data && add5Hr30Min(latest_sync_date?.data)}
+						/>
+					</Grid>
+					
+					<Grid item xs={12} sm={12} md={4}>
+						<PrepaidStats 
+							title="Revenue for units consumed"
+							totalamount= {((totalUnitConsumed?.data / 1000) * 5.5)?.toFixed(2) || 0.0}
+							unittext=""
+							unittext2="Rs."
+							illustration=""
+							statstime={latest_sync_date?.data && add5Hr30Min(latest_sync_date?.data)}
+						/>
+					</Grid>
+					
+					<Grid item xs={12} sm={12} md={4}>
+						<PrepaidStats 
+							title="Total Revenue Generated"
+							totalamount={(recharge_amount?.data && showLakThousand(recharge_amount?.data)) || 0.0}
+							unittext=""
+							unittext2=""
+							illustration=""
+							statstime={latestSyncDate?.data && add5Hr30Min(latestSyncDate?.data)}
+						/>
+					</Grid>					
+				</Grid>
+			{/* <Link to="https://mui.com/components/grid/">Link</Link> */}
+			<Grid item xs={12} lg={12} spacing={6}>
+				<div className='pb-2 flex justify-end'>
+					
+				</div>
+				<TableWrapper error={error}>
+					<>
+						{loading ? (
+							<div className='flex items-center justify-center pt-10'>
+								<CircularProgress />
+							</div>
+						) : (
+							<>
+								{prepaidList && (
+									<div className='space-y-2'>
+										<div className='text-sm text-right'>
+											<p>Total Count: {prepaidList?.meta?.filter_count}</p>
+										</div>
+										<Table
+											loading={loading}
+											tableData={prepaidList?.data}
+											columns={columns}
+										// actions={[
+										// 	{
+										// 		icon: <Visibility />,
+										// 		action: (rowData) => {
+										// 			navigate(`${rowData?.usc_number}/view`)
+										// 		},
+										// 	},
+										// 	{
+										// 		icon: <Edit />,
+										// 		action: (rowData) => {
+										// 			navigate(`${rowData?.usc_number}/edit`)
+										// 		},
+										// 	},
+										// ]}
+										/>
+										{/* <div className='flex justify-between items-center gap-3 py-2 border-t border-primary border-opacity-30'>
+											<p className='text-sm text-gray-600'>{`Page: ${page}/${Math.ceil(
+												prepaidList?.meta?.filter_count / limit
+											)}`}</p>
+											<Pagination
+												variant='outlined'
+												shape='rounded'
+												count={Math.ceil(
+													prepaidList?.meta?.filter_count / limit
+												)}
+												page={page}
+												onChange={handleChange}
+											/>
+										</div> */}
+									</div>
+								)}
+							</>
+						)}
+					</>
+				</TableWrapper>
+			</Grid>
+			</Grid>
+		</Grid>
+	)
+}
+
+export default PrepaidTable;
+
+const findAvailBalance = (item) => {
+	return item.rowcolor = item?.meter_serial_number?.current_balance <= (item?.total_amount_paid / 100 * 30) ? 'soon-empty' : item?.meter_serial_number?.current_balance <= (item?.total_amount_paid / 100 * 40) ? 'soon-avg' : 'full-bal';
+}
+
+const convertPercentage = (item) => {
+	return item?.total_amount_paid > 0 ? (item?.meter_serial_number?.current_balance / item?.total_amount_paid * 100).toFixed(2) : !isNaN(item?.meter_serial_number?.current_balance / item?.total_amount_paid * 100) && '-';
+}
+const columns = [
+	{
+		field: 'usc_number',
+		headerName: 'Service Number',
+		width: 150,
+		
+		renderCell: (item) => {
+			if (item?.row?.meter_serial_number) {
+				if (item?.row?.meter_serial_number?.meter_serial_number) {
+					return (
+						<Link
+							to={{
+								pathname: 'meterdetails',
+								// pathname: item?.row?.usc_number,
+								search: `?usc_number=${item?.row?.usc_number}&meter_type=${item?.row?.meter_serial_number?.meter_connection_type}&meterId=${item?.row?.meter_serial_number?.meter_serial_number}`,
+							}}
+							className='hover:underline text-blue-600'
+						>
+							{item?.row?.usc_number}
+						</Link>
+					)
+				}
+				else {
+					return (
+						<p>{item?.row?.usc_number}</p>
+					)
+				}
+			}
+		}
+		
+		// render: (item) => {
+		// 	<>
+		// 		<Link to="https://www.google.com/"> New Link </Link> 
+		// 	</>
+		// }
+		// type: 'number'
+		//key: 'usc_number',
+		//title: 'Service Number',
+		// render: (item) => (
+		// 	<>
+		// 		{item?.meter_serial_number ? (
+		// 			<Link
+		// 				to={{
+		// 					pathname: 'meterdetails',
+		// 					search: `?usc_number=${item?.usc_number}&meter_type=${item?.meter_serial_number?.meter_connection_type}&meterId=${item?.meter_serial_number?.meter_serial_number}`,
+		// 				}}
+		// 				className='hover:underline text-blue-600'
+		// 			>
+		// 				{item.usc_number}
+		// 			</Link>
+		// 		) : (
+		// 			<p>{item?.usc_number}</p>
+		// 		)}
+		// 	</>
+		// ),
+	},
+	{
+		field: 'first_name',
+		headerName: 'Name',
+		width:150,
+		// key: 'name',
+		// title: 'Name',
+		// render: (c) => [c.first_name, c?.last_name].join(' '),
+	},
+	{
+		field: 'phone1',
+		headerName: 'Phone ',
+		width:150,
+		// key: 'phone1',
+		// title: 'Phone'
+	},
+	{
+		field: 'meter_serial_number',
+		headerName: 'Meter serial number',
+		width: 150,
+		valueGetter: (params) => {
+			// console.log("Test", {params});
+			let result = [];
+			if (params.row.meter_serial_number) {
+				if (params.row.meter_serial_number.meter_serial_number) {
+					result.push(params.row.meter_serial_number.meter_serial_number);
+				}
+			}
+			return result;
+		}
+		// key: 'meter_serial_number.meter_serial_number',
+		// title: 'Meter serial number',
+	},
+	// {
+	// 	key: 'meter_category_4G',
+	// 	title: 'Meter Category',
+	// },
+	// {
+	// 	key: 'power_status',
+	// 	title: 'Power status',
+	// 	render: (item) => {
+	// 		const renderComponent = () => {
+	// 			if (item?.meter_serial_number?.power_status === 'On') return <PowerOn />
+	// 			if (item?.meter_serial_number?.power_status === 'Off')
+	// 				return <PowerOff />
+	// 			return null
+	// 		}
+	// 		return <>{renderComponent()}</>
+	// 	},
+	// },
+	// {key: 'consumer_phase_id.phase_name', title: 'Phase'},
+	// {key: 'area_id.area_name', title: 'Area Name'},
+	// {key: 'meter_serial_number.relay_status', title: 'Relay Status'},
+	// {key: 'meter_serial_number.old_meterid', title: 'Old meter Number'},
+	// {key: 'ero_id.ero_name', title: 'ERO name'},
+	// {key: 'section_id.section_name', title: 'Section name'},
+	// {key: 'consumer_phase_id.phase_name', title: 'Total Units consumed'},
+
+	{
+		field: 'latest_reading_kWh',
+		headerName: 'Total Power Cosumption (Kwh) ',
+		width: 150,
+		valueGetter: (params) => {
+			let result = [];
+			if (params.row.meter_serial_number) {
+				if (params.row.meter_serial_number.latest_reading_kWh) {
+					result.push(params.row.meter_serial_number.latest_reading_kWh);
+				}
+			}
+			return result;
+		}
+
+		// key: 'meter_serial_number.latest_reading_kWh',
+		// title: 'Total Power Cosumption (Kwh)',
+		// render: (item) => {
+		// 	return (
+		// 		(item?.meter_serial_number?.latest_reading_kWh / 1000 &&
+		// 			(item?.meter_serial_number?.latest_reading_kWh / 1000).toFixed(2)) ||
+		// 		'-'
+		// 	)
+		// },
+	},
+	{
+		field: 'meter_serial_number.current_balance',
+		headerName: 'Current Balance (INR) ',
+		width: 150,
+		valueGetter: (params) => {
+			let result = [];
+			if (params.row.meter_serial_number) {
+				if (params.row.meter_serial_number.current_balance) {
+					result.push(params.row.meter_serial_number.current_balance);
+				}
+			}
+			return result;
+		}
+		// key: 'meter_serial_number.current_balance',
+		// title: 'Current Balance (INR)',
+		// render: (item) => {
+		// 	return item?.meter_serial_number?.current_balance?.toFixed(2) || '-'
+		// },
+	},
+	{
+		field: 'current_balance',
+		headerName: '% of Balance Available ',
+		type: 'number',
+		width: 150,
+		
+		renderCell: (item) => {
+			if (item?.row?.meter_serial_number) {
+				if (item?.row?.meter_serial_number?.current_balance) {
+
+					// const percent = item?.row?.total_amount_paid > 0 ? (item?.row?.meter_serial_number?.current_balance / item?.row?.total_amount_paid  100).toFixed(2) : !isNaN(item?.row?.meter_serial_number?.current_balance / item?.row?.total_amount_paid  100) && '-';
+					// result.push(`${percent} %`);
+					const p = convertPercentage(item?.row);
+					return (
+						// <div className={`${findAvailBalance(item?.row)}`}><span className='p-box' style={{ width: p + '%' }}></span>{p || '-'}</div>
+						<Chip label={`${p} %`} color="success" />
+					)
+
+				}
+			}
+		}
+
+
+		// valueFormatter: (params: GridValueFormatterParams) => {
+		// 	const valueFormatted = Number(
+		// 	  100 * 100,
+		// 	).toLocaleString();
+		// 	return `${valueFormatted} %`;
+		//   },
+	
+
+		// valueGetter: (params) => {
+		// 	let result = [];
+		// 	if(params.row.meter_serial_number){
+		// 		if(params.row.meter_serial_number.current_balance){
+		// 			result.push(params.row.meter_serial_number.current_balance);
+		// 		}
+		// 	}
+		// 	return result;	
+		// }
+
+		// valueGetter: (params) =>
+		// 	`${params.getValue("firstName") || ""} ${params.getValue("lastName") || ""}`
+
+		// key: 'meter_serial_number.current_balance',
+		// title: '% of Balance Available',
+		// render: (item) => {
+		// 	const p = convertPercentage(item);
+		// 	return <div className={`${findAvailBalance(item)}`}><span className='p-box' style={{ width: p + '%' }}></span>{p || '-'}</div>
+		// },
+	},
+	{
+		field: 'current_balance_timestamp',
+		headerName: 'Balance updated time ',
+		hide: 'true',
+		width: 150,
+		valueGetter: (params) => {
+			let result = [];
+			if (params.row.meter_serial_number) {
+				if (params.row.meter_serial_number.current_balance_timestamp) {
+					result.push(params.row.meter_serial_number.current_balance_timestamp);
+				}
+			}
+			return result;
+		}
+		// key: 'meter_serial_number.current_balance_timestamp',
+		// title: 'Balance updated time',
+		// render: (item) => {
+		// 	return item?.meter_serial_number?.current_balance_timestamp
+		// 		? add5Hr30Min(item.meter_serial_number.current_balance_timestamp)
+		// 		: '-'
+		// },
+	},
+	{
+		field: 'last_recharge_amount',
+		headerName: 'Last Recharge Amount (INR) ',
+		hide: 'true',
+		width: 150,
+		// key: 'last_recharge_amount',
+		// title: 'Last Recharge Amount (INR)',
+		// render: (item) => {
+		// 	return item?.last_recharge_amount?.toFixed(2) || '-'
+		// },
+	},
+	{
+		field: 'date_of_last_recharge',
+		headerName: 'Latest Recharge Date ',
+		hide: 'true',
+		width: 150,
+		// key: 'date_of_last_recharge',
+		// title: 'Latest Recharge Date',
+		// render: (item) => {
+		// 	return item?.date_of_last_recharge
+		// 		? add5Hr30Min(item?.date_of_last_recharge)
+		// 		: '-'
+		// },
+	},
+	{
+		field: 'total_amount_paid',
+		headerName: 'Total Recharge amount (INR) ',
+		hide: 'true',
+		width: 150,
+		// key: 'total_amount_paid',
+		// title: 'Total Recharge amount (INR)',
+		// render: (item) => {
+		// 	return item?.total_amount_paid?.toFixed(2)
+		// },
+	},
+	{
+		field: 'meter_id',
+		headerName: 'Meter Id ',
+		hide: 'true',
+		width: 150,
+		valueGetter: (params) => {
+			let result = [];
+			if (params.row.meter_serial_number) {
+				if (params.row.meter_serial_number.meter_id) {
+					result.push(params.row.meter_serial_number.meter_id);
+				}
+			}
+			return result;
+		}
+		// key: 'meter_serial_number.meter_id',
+		// title: 'Meter Id'
+	},
+
+	{
+		field: 'address',
+		headerName: 'Address ',
+		hide: 'true',
+		width: 150,
+		// key: 'address',
+		// title: 'Address'
+	},
+
+	// {key: 'consumer_category.consumer_category_name', title: 'Category'},
+	// {key: 'sub_group.sub_group_name', title: 'Sub group'},
+	// {key: 'meter_serial_number.meter_status', title: 'Meter status'},
+	// {
+	// 	key: 'latest_sync',
+	// 	title: 'Latest updated time',
+	// 	render: (item) =>
+	// 		item?.meter_serial_number?.latest_sync_date
+	// 			? format(
+	// 					add(new Date(item?.meter_serial_number?.latest_sync_date), {
+	// 						hours: 5,
+	// 						minutes: 30,
+	// 					}),
+	// 					'dd/MM/yyyy hh:mm a'
+	// 			  )
+	// 			: '-',
+	// },
+]
+

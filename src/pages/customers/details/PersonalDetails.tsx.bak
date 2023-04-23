@@ -1,0 +1,211 @@
+import {InsertPhotoOutlined, LocationOn} from '@mui/icons-material'
+import { TextField as MuiTextField, } from '@mui/material'
+import Card from './components/DetailsCard'
+import {
+  Grid,
+  Divider as MuiDivider,
+  Typography as MuiTypography,
+} from "@mui/material";
+import styled from "styled-components/macro";
+import { spacing } from "@mui/system";
+
+const TextFieldSpacing = styled(MuiTextField)(spacing);
+
+const TextField = styled(TextFieldSpacing)`
+  width: 100%;
+`;
+
+const PersonalDetails = ({c}) => {
+	const handleViewOnMap = () => {}
+	const handleViewImage = () => {}
+
+	return (
+		<Card title='Customer information'>
+			<Grid item xs={12} lg={12} md={12} className='grid gap-4 grid-cols-3 gap-y-8'>
+				<TextField						
+					value={[c?.first_name, c?.last_name].join(' ')}
+					label={'Customer name'}
+					id="standard-required"
+					variant="outlined"	
+					InputLabelProps={{
+						shrink: true,
+					}}
+					InputProps={{
+						readOnly: true,
+					}}
+				/>
+				
+				<TextField						
+					value={c?.usc_number}
+					label={'Customer service number'}
+					id="standard-required"
+					variant="outlined"	
+					InputLabelProps={{
+						shrink: true,
+					}}
+					InputProps={{
+						readOnly: true,
+					}}
+				/>
+				
+				<TextField						
+					value={c?.tarrif}
+					label={'Tarrif'}
+					id="standard-required"
+					variant="outlined"	
+					InputLabelProps={{
+						shrink: true,
+					}}
+					InputProps={{
+						readOnly: true,
+					}}
+				/>
+				
+				<TextField						
+					value={c?.phone1}
+					label={'Contact number'}
+					id="standard-required"
+					variant="outlined"	
+					InputLabelProps={{
+						shrink: true,
+					}}
+					InputProps={{
+						readOnly: true,
+					}}
+				/>
+								
+				<TextField						
+					value={c?.address}
+					label={'Address'}
+					id="standard-required"
+					variant="outlined"	
+					InputLabelProps={{
+						shrink: true,
+					}}
+					InputProps={{
+						readOnly: true,
+					}}
+				/>
+				
+				<TextField						
+					value={c?.circle_id?.circle_name}
+					label={'Circle'}
+					id="standard-required"
+					variant="outlined"	
+					InputLabelProps={{
+						shrink: true,
+					}}
+					InputProps={{
+						readOnly: true,
+					}}
+				/>
+				
+				<TextField						
+					value={c?.division_id?.division_name}
+					label={'Division'}
+					id="standard-required"
+					variant="outlined"	
+					InputLabelProps={{
+						shrink: true,
+					}}
+					InputProps={{
+						readOnly: true,
+					}}
+				/>
+								
+				<TextField						
+					value={c?.sub_division_id?.sub_division_name}
+					label={'Sub division'}
+					id="standard-required"
+					variant="outlined"	
+					InputLabelProps={{
+						shrink: true,
+					}}
+					InputProps={{
+						readOnly: true,
+					}}
+				/>
+				
+				<TextField						
+					value={c?.sub_station_id?.sub_station_name}
+					label={'Sub station'}
+					id="standard-required"
+					variant="outlined"	
+					InputLabelProps={{
+						shrink: true,
+					}}
+					InputProps={{
+						readOnly: true,
+					}}
+				/>
+				
+				<TextField						
+					value={c?.feeder_id?.feeder_name}
+					label={'Feeder'}
+					id="standard-required"
+					variant="outlined"	
+					InputLabelProps={{
+						shrink: true,
+					}}
+					InputProps={{
+						readOnly: true,
+					}}
+				/>
+								
+				<TextField						
+					value={c?.dtc_id?.dtc_name}
+					label={'Dtc'}
+					id="standard-required"
+					variant="outlined"	
+					InputLabelProps={{
+						shrink: true,
+					}}
+					InputProps={{
+						readOnly: true,
+					}}
+				/>
+				
+				<TextField						
+					value={c?.meter_serial_number?.meter_serial_number}
+					label={'Meter number'}
+					id="standard-required"
+					variant="outlined"	
+					InputLabelProps={{
+						shrink: true,
+					}}
+					InputProps={{
+						readOnly: true,
+					}}
+				/>
+				
+				<TextField						
+					value={c?.meter_serial_number?.meter_make}
+					label={'Meter make'}
+					id="standard-required"
+					variant="outlined"	
+					InputLabelProps={{
+						shrink: true,
+					}}
+					InputProps={{
+						readOnly: true,
+					}}
+				/>
+								
+				<TextField						
+					value={c?.meter_serial_number?.meter_protocol_classification_id?.name}
+					label={'Protocol type'}
+					id="standard-required"
+					variant="outlined"	
+					InputLabelProps={{
+						shrink: true,
+					}}
+					InputProps={{
+						readOnly: true,
+					}}
+				/>
+			</Grid>
+		</Card>
+	)
+}
+
+export default PersonalDetails

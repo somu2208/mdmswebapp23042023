@@ -1,0 +1,120 @@
+import React from "react";
+import {Breadcrumbs, CircularProgress, Grid, Divider as MuiDivider,
+  Typography as MuiTypography,} from '@mui/material'
+import {getMeterDetails} from 'api/services/meters'
+import AllTampersChart from 'pages/tampers/AllTampersChart'
+import ConnectAndDisconnectTamperChart from 'pages/tampers/ConnectAndDisconnectTamperChart'
+import CurrentEventTamperChart from 'pages/tampers/CurrentEventTampersChart'
+import MeterCoverOpenTamperChart from 'pages/tampers/MeterCoverOpenTamperChart'
+import OtherEventTamperChart from 'pages/tampers/OtherEventTamperData'
+import PowerEventTampers from 'pages/tampers/PowerEventTampers'
+import TransactionEventChart from 'pages/tampers/TransactionEventChart'
+import VoltageEventTampers from 'pages/tampers/VoltageEvents'
+import {useQuery, UseQueryResult} from 'react-query'
+import {Link, useParams} from 'react-router-dom'
+import {getData} from './getData'
+import MeterOperations from './MeterOperations'
+import styled from "styled-components/macro";
+import { spacing } from "@mui/system";
+
+function ViewMeterDetails() {
+	const params = useParams()
+	const Divider = styled(MuiDivider)(spacing);
+
+	const Typography = styled(MuiTypography)(spacing);
+	
+	const {data, isLoading, error}: UseQueryResult<any, Error> = useQuery(
+		['meter-details', params.meterId],
+		getMeterDetails
+	)
+	console.log(data?.data?.data[0])
+	if (isLoading) {
+		return (
+			<div className='flex items-center justify-center w-full h-screen'>
+				<CircularProgress />
+			</div>
+		)
+	}
+
+	if (error) {
+		return <div className='text-lg text-gray-700 p-4'>{error?.message}</div>
+	}
+
+	return (
+	<React.Fragment>
+		<Grid justifyContent="space-between" container spacing={6}>
+			<Grid item xs={12} lg={12}>
+				<Typography variant="h3" gutterBottom>
+					<Link to='/meters'>Meters</Link> / Allocated
+				</Typography>
+			</Grid>
+		</Grid>
+		<Divider my={3} />
+		<Grid container spacing={6}>
+			<Grid item xs={12} lg={12}>									
+				{getData(data?.data?.data[0]).map((item, index) => (
+					<Grid item xs={12} lg={12} spacing={6} mb={6} className='bg-white' key={index}>
+						<div className='border mt-5 pb-5 rounded-md'>
+						<div className='bg-gray-200'>
+							<h6 className='text-md text-gray-600 p-2 mb-5'><b>{item.title}</b></h6>
+						</div>
+						<Grid container className='px-5 py-2'>
+							{item.values.map((item, index) => (
+								<Grid item xs={4} key={index}>
+									<div className='mb-4 p-2'>
+										<h6 className='text-sm text-gray-500 mb-1.5'>
+											{item.label}
+										</h6>
+										<h4>{item.value}</h4>
+									</div>
+								</Grid>
+							))}
+						</Grid>	
+						</div>
+					</Grid>
+				))}
+			</Grid>
+		</Grid>	
+		<Grid container spacing={6} mb={3}>
+			<Grid item xs={12} lg={12} spacing={6} mb={3}>
+				<MeterOperations
+					details={{
+						csn: data?.data?.data[0]?.usc_number,
+						meterId: data?.data?.data[0]?.meter_serial_number,
+					}}
+				/>
+			</Grid>
+		</Grid>
+		<Grid container spacing={6}>
+			<Grid item xs={12} lg={12} spacing={6}>
+				<AllTampersChart />
+			</Grid>
+			<Grid item xs={12} lg={12} spacing={6}>
+				<PowerEventTampers />
+			</Grid>
+			<Grid item xs={12} lg={12} spacing={6}>
+				<VoltageEventTampers />
+			</Grid>
+			<Grid item xs={12} lg={12} spacing={6}>
+				<CurrentEventTamperChart />
+			</Grid>
+			<Grid item xs={12} lg={12} spacing={6}>
+				<OtherEventTamperChart />
+			</Grid>
+			<Grid item xs={12} lg={12} spacing={6}>
+				<TransactionEventChart />
+			</Grid>
+			<Grid item xs={12} lg={12} spacing={6}>
+				<MeterCoverOpenTamperChart />
+			</Grid>
+			<Grid item xs={12} lg={12} spacing={6}>
+				<ConnectAndDisconnectTamperChart />
+			</Grid>
+		</Grid>
+			
+			
+	</React.Fragment>
+	)
+}
+
+export default ViewMeterDetails

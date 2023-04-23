@@ -1,0 +1,105 @@
+import React from "react";
+import styled, { withTheme } from "styled-components/macro";
+import { MoreVertical } from "react-feather";
+import { VectorMap } from "react-jvectormap";
+
+import {
+  Card as MuiCard,
+  CardContent as MuiCardContent,
+  CardHeader,
+  IconButton,
+} from "@mui/material";
+import { spacing } from "@mui/system";
+
+import "../../vendor/jvectormap.css";
+
+const MapContainer = styled.div`
+  height: 344px;
+`;
+
+const Card = styled(MuiCard)(spacing);
+
+const CardContent = styled(MuiCardContent)`
+  &:last-child {
+    padding-top: 0;
+    padding-bottom: 24px;
+  }
+`;
+
+function WorldMap(props) {
+  const options = {
+    map: "in_mill",
+    regionStyle: {
+      initial: {
+        fill: "#dee2e8",
+      },
+	  hover: {
+		fill: "#eef0f3",
+		'fill-opacity': 0.7,
+	  }
+    },
+    backgroundColor: "#FFFF",
+    containerStyle: {
+      width: "100%",
+      height: "100%",
+    },
+    markerStyle: {
+      initial: {
+        r:9,
+		fill: "#3b7ddd",
+		strokeWidth: 20,				
+		stroke: "#9dbeee"
+      },
+      hover: {
+        stokeOpacity: .4,
+		fill: '#9dbeee',
+		stroke: '#9dbeee'
+      },
+    },
+    zoomOnScroll: false,
+	focusOn: "IN-AP",
+    markers: [      
+      {
+        latLng: [15.54, 80.30],
+        name: "Bapatala",
+      },
+	  {
+        latLng: [14.28, 78.52],
+        name: "Cuddapah",
+      },
+	  {
+        latLng: [15.46, 79.44],
+        name: "Darsi",
+      },
+	  {
+        latLng: [14.24, 77.00],
+        name: "Dharmavaram",
+      },
+	  {
+        latLng: [16.24, 81.09],
+        name: "Eluru",
+      }      
+    ],
+  };
+
+  return (
+    <Card mb={6} spacing={6}>
+      <CardHeader
+        action={
+          <IconButton aria-label="settings" size="small">
+            <MoreVertical />
+          </IconButton>
+        }
+        title="Active Meters & Outages on Map"
+		sx={{fontSize: 14}}
+      />
+      <CardContent>
+        <MapContainer>
+          <VectorMap {...options} />
+        </MapContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default withTheme(WorldMap);

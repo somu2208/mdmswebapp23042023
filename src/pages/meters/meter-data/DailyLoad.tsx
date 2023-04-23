@@ -1,0 +1,177 @@
+import { Button, CircularProgress, Pagination, Grid, Typography } from '@mui/material'
+import { fetchMeter360DataLoad } from 'api/services/meters'
+import Table from 'components/table'
+import { addDays, format, subDays } from 'date-fns'
+import { useEffect, useState } from 'react'
+import { useMutation } from 'react-query'
+import { useParams, useSearchParams } from 'react-router-dom'
+import {
+	dailyLoadPhase1columns,
+	dailyLoadPhase2columns,
+} from '../meters360/DailyLoad'
+
+const DailyLoad = () => {
+	const [page, setPage] = useState(1)
+	const [currentDate, setCurrentDate] = useState(new Date())
+
+	const [search] = useSearchParams()
+	const phaseId = search.get('phase')
+	const params = useParams()
+	const key =
+		phaseId === 'single-phase'
+			? 'meter_dailyload_profile_single_phase_synctime'
+			: 'meter_dailyload_profile_three_phase_synctime'
+
+	const {
+		data,
+		error,
+		isLoading: loading,
+		mutate,
+	} = useMutation('meter360DataInstantaneous', fetchMeter360DataLoad)
+
+	const handlePrev = () => {
+		mutate({
+			key,
+			meterId: params.meterId,
+			page,
+			date: subDays(currentDate, 1),
+		})
+		setCurrentDate(subDays(currentDate, 1))
+	}
+	const handleNext = () => {
+		mutate({
+			key,
+			meterId: params.meterId,
+			page,
+			date: addDays(currentDate, 1),
+		})
+		setCurrentDate(addDays(currentDate, 1))
+	}
+
+	useEffect(() => {
+		mutate({
+			key,
+			meterId: params.meterId,
+			page,
+			date: new Date(),
+		})
+	}, [])
+
+	return (
+		<>
+			<Grid md={12} py={1} ml={1} sx={{ display: "flex" }}>
+				{/* <div className='flex gap-2 items-center border border-gray-300 rounded-md'> */}
+
+				<Typography variant="h5"> Daily Load </Typography>
+
+				<Grid sx={{ display: "flex", textAlign: "center" }} className="gap-2 border border-gray-300 rounded-md filter_data_by_date_instant">
+					<Button size='small' color='secondary' onClick={handlePrev}>
+						Prev
+					</Button>
+					<Typography mt={1.1}>{new Date(currentDate).toLocaleString('en-us',{day: 'numeric', month:'short', year:'numeric'})}</Typography>
+					<Button
+						disabled={addDays(currentDate, 1) > new Date()}
+						size='small'
+						color='secondary'
+						onClick={handleNext}
+					>
+						Next
+					</Button>
+				</Grid>
+			</Grid>
+			{loading ? (
+				<CircularProgress />
+			) : (
+				<Grid mt={2}>
+					<TableComponent
+						data={data}
+						page={page}
+						date={currentDate}
+						meterId={params?.meterId}
+						mutate={mutate}
+						phaseId={phaseId}
+						setPage={setPage}
+						key={key}
+						loading={loading}
+						error={error}
+					/>
+				</Grid>
+			)}
+		</>
+	)
+}
+
+const TableComponent = ({
+	setPage,
+	mutate,
+	date,
+	meterId,
+	key,
+	phaseId,
+	data,
+	page,
+	loading,
+	error,
+}) => {
+	const handleChange = (event, value) => {
+		setPage(value)
+		mutate({
+			page: value,
+			date,
+			meterId,
+			key,
+		})
+	}
+
+	if (error) return <Typography>Server Error</Typography>
+	// if (data?.data?.length === 0)
+	// 	return <div className='text-center'>No data</div>
+	return (
+		<>
+			<Grid md={12} sx={{ backgroundColor: "white", p: 1 }} className="rounded-xl instant_table_m">
+				{/* <div className='text-sm text-right'> */}
+
+				{data?.data?.length ? (
+					<>
+						<Grid className='text-sm-count text-right'>
+							<Typography>Total Count: {data?.meta?.filter_count}</Typography>
+						</Grid>
+						
+						{phaseId === 'single-phase' && (
+							<Grid>
+								<Table
+									tableData={data?.data}
+									columns={dailyLoadPhase1columns}
+									loading={loading}
+								/>
+							</Grid>
+						)}
+						{phaseId === 'three-phase' && (
+							<Table
+								tableData={data?.data}
+								columns={dailyLoadPhase2columns}
+								loading={loading}
+							/>
+						)}
+
+						{/* <div className='flex justify-between mt-5'>
+							<p className='text-gray-600'>{`Page : ${page}/${Math.ceil(
+								data?.meta?.filter_count / 10
+							)}`}</p>
+							<Pagination
+								variant='outlined'
+								shape='rounded'
+								count={Math.ceil(data?.meta?.filter_count / 10)}
+								page={page}
+								onChange={handleChange}
+							/>
+						</div> */}
+					</>
+				) : (
+					<Typography sx={{ textAlign: "center" }}> No Data </Typography>
+				)}
+			</Grid>
+		</>
+	)
+}
+export default DailyLoad

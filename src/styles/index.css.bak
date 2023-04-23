@@ -1,0 +1,731 @@
+/* @font-face {
+	font-family: nunito_regular;
+	src: url('../assets/fonts/NunitoSans-Regular.ttf');
+} */
+body {
+	overflow-x: hidden;
+	font-family: Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+}
+.full-bal, .soon-empty, .soon-avg {position: relative; z-index: 9; text-align: center; color: white;}
+.p-box{
+	display: block;
+	height: 100%;
+    z-index: -1;
+	position: absolute;
+}
+
+.full-bal .p-box { background-color: green;}
+.soon-avg .p-box { background-color: yellow;}
+.soon-empty .p-box { background-color: red;}
+
+.soon-avg {color: black}
+
+.logosize{
+	padding:10px;
+}
+
+.gJtgmq {
+	margin-bottom:14px!important;
+}
+html, body, #root {
+    height: auto !important;
+    overflow-x: hidden;
+}
+.text-right {
+	text-align: right;
+    padding: 6px 15px;
+}
+.phasebutton>div>button{
+	padding:5px 10px;
+	border:1px solid #ccc;
+	margin:0px 1px;
+	font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+	font-weight: 500;
+    font-size: 11px;
+    line-height: 11px;
+	padding: 6px 8px;
+    border-radius: 4px;
+	transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, border-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+    color: #ffffff;
+    background-color: #4782da;
+
+}
+
+.phasebutton>div>button:hover{
+	background-color:#315b98;
+}
+.phasebutton>div>button.active-a{
+	background-color:#1c2430;
+}
+
+.MuiDataGrid-toolbarContainer>button {
+	color: #426fb5;
+	border:1px solid #bdcadf;
+	padding:0 8px;
+	margin-right:12px;
+	margin-bottom:15px;
+}
+
+.MuiDataGrid-toolbarContainer>button>span {
+    color: #426fb5;
+}
+
+.css-1jbbcbn-MuiDataGrid-columnHeaderTitle{
+	font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    font-weight: 500;
+    font-size: 0.8125rem;
+}
+
+.MuiDataGrid-iconSeparator{
+	display:none;
+}
+
+.MuiSvgIcon-root{
+	color: #426fb5;
+}
+.MuiDataGrid-sortIcon{
+	color:white !important;
+}
+/* 
+.MuiButtonBase-root button svg {
+    color: #fff !important;
+} */
+
+.MuiDataGrid-menuIcon button svg {
+    color: #fff !important;
+}
+.makeStyles-value-2 {
+	color: #e5e2e2!important;
+}
+
+.MuiChip-outlined>span{
+	padding:5px 8px!important;
+	text-transform:uppercase;
+	font-size: 11px!important;
+    font-weight: bold;
+}
+
+.MuiDataGrid-columnHeaders{
+	/* background: rgb(0, 0, 0); */
+	/* background: rgb(59 125 221); */
+	background: #233044;
+    color: rgb(255, 255, 255);
+	
+}
+
+.MuiDataGrid-main>.MuiSvgIcon-root {
+    color: #ffffff;
+}
+
+/*.MuiSwitch-switchBase .MuiSwitch-thumb {
+	color: #426fb5!important;
+}*/
+
+.MuiDataGrid-row:nth-child(even) {
+	background-color: rgba(0, 0, 0, 0.024);
+}
+
+.MuiSwitch-track{
+	background-color: #a9bad5!important;
+}
+.prepaidtimeclass{
+	color: #000000c9!important;
+    float: right;
+    margin-bottom: 2%;
+	font-size: 12px;
+    font-weight: 600;	
+}
+
+.alarmicon{
+	font-size:15px!important;
+	color:#000000c9!important;
+}
+
+*::-webkit-scrollbar {
+    width: 12px;
+    height: 13px;
+}
+*::-webkit-scrollbar-thumb {
+    background-color: #ababab;
+    border-radius: 20px;
+    border: 3px solid #ffffff;
+}
+*::-webkit-scrollbar-track {
+    background: #ffffff;
+}
+.MuiDataGrid-root{
+	border:none!important;
+}
+.powerconsumtionchart{
+	margin-left:15px;
+}
+
+.sidelogo{
+	width:258px;
+	position: fixed;
+}
+
+.desktop-logo{
+	padding-left: 8%;
+    padding-right: 8%;
+    padding-top: 2%;
+}
+.active-menu{
+	background-color: rgb(30, 41, 58)!important;
+}
+.MuiListItemText-root > span{
+	color: rgb(238, 238, 238);
+    font-size: 13px;
+}
+
+.MuiListItemIcon-root{
+	min-width:38px!important;
+	opacity: 0.5!important;
+}
+
+h6{
+	font-size: 1rem!important;
+    font-weight: 500;
+    line-height: 1.25;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+h3{
+	font-size: 1.5rem!important;
+    font-weight: 600;
+    line-height: 1.25;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+.MuiTypography-caption{
+	font-size:13px!important;
+}
+
+.donutleft{	
+	float:left;
+}
+.filterbuttondash{
+	padding: 0px!important;
+    min-width: 34px!important;
+	box-shadow:none!important;
+}
+
+
+.filterbuttondash>svg{
+	color:#fff!important;
+}
+
+.donutright{
+}
+
+.text-sm-count{
+	position: absolute;
+    right: 40px;
+	font-weight:600;
+}
+
+.tab-box{
+	border-top:none;
+	border-left:1px solid #e4e4e4;
+	border-right:1px solid #e4e4e4;
+	border-bottom:1px solid #e4e4e4;	
+	background-color:#ffffff;
+}
+
+.innnerbox{
+	padding:15px;
+}
+
+.meternavigation{
+	color:rgb(55, 111, 208);
+	font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+	font-weight: 400;
+    line-height: 1.5;
+	border-bottom:1px solid #e4e4e4	
+}
+
+.meternavigation > a{
+	border-radius: 5px 5px 0 0;
+	border-right:1px solid #e4e4e4;
+	border-top:1px solid #e4e4e4;
+	border-left:1px solid #e4e4e4;
+	border-bottom:none;
+	margin-right:5px;
+}
+
+.meternavigation > a:hover{
+	color: rgba(0, 0, 0, 0.6)!important;
+	background-color:#f7f9fc!important;
+}
+
+.meter-data-navigation{
+	color:rgb(55, 111, 208);
+	font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+	font-weight: 400;
+    line-height: 1.5;
+	border-bottom:1px solid #e4e4e4;
+}
+
+.MuiTabs-root.meter-data-navigation button {
+    border-radius: 5px 5px 0 0;
+    border-right: 1px solid #e4e4e4;
+    border-top: 1px solid #e4e4e4;
+    border-left: 1px solid #e4e4e4;
+    border-bottom: none;
+    margin-right: 5px;
+}
+
+
+
+.activemeternav{
+	color: #000!important;
+	background-color: #cce0fd!important;
+    border-radius: 5px 5px 0 0;
+	font-weight:bold;
+}
+.breadcrumbtext{
+	color:rgb(55, 111, 208);
+	font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+	font-weight: 400;
+    line-height: 1.5;
+}
+.MuiInputBase-formControl>div {
+    padding: 1px 5px;
+}
+.MuiFormControl-root {
+    margin-right: 5px;
+}
+form.flex.gap-2.text-right {
+    display: block;
+    padding: 9px 0px;
+    
+}
+.MuiSelect-select.MuiSelect-outlined.MuiOutlinedInput-input {
+    padding-right: 18px;
+}
+svg.MuiSvgIcon-root.MuiSvgIcon-fontSizeMedium {
+    right: -2px;
+}
+button.MuiButton-root.MuiButton-contained.MuiButton-containedPrimary {
+    /* margin-top: -4px;
+	font-size: 12px;
+    padding: 2px 6px !important; */
+	font-size: 15px;
+    padding: 4px 15px !important;
+	background-color: rgb(59 125 221);
+}
+.filterbuttondash{
+	min-width: 27px!important;
+}
+button.MuiButton-root.MuiButton-contained.MuiButton-containedPrimary svg {
+    font-size: 20px;
+}
+
+.prepaidtimeclass svg {
+    margin-top: -3px;
+    margin-right: 3px;
+}
+span.MuiTypography-root.MuiTypography-caption .prepaidtimeclass svg {
+    margin-right: 6px;
+}
+
+.docnutsection {
+    padding-left: 24px !important;
+}
+
+.tabboxborder{
+	border-left:1px solid #e4e4e4;
+	border-right:1px solid #e4e4e4;
+	border-bottom:1px solid #e4e4e4;
+	border-top:1px solid #e4e4e4;
+	background-color:#fff;
+}
+
+
+.meter-data-meternavigation-2{
+	font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+	font-weight: 400;
+    line-height: 1.5;	
+}
+
+.MuiTabs-root.meter-data-navigation-2 button {
+	font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+	font-weight: 400;
+    line-height: 1.5;
+    border-radius: 5px 5px 0 0;
+    border-right: 1px solid #e4e4e4;
+    border-top: 1px solid #e4e4e4;
+    border-left: 1px solid #e4e4e4;
+    border-bottom: none;
+    margin-right: 5px;
+	color:rgb(55, 111, 208);
+	margin-right: 5px;
+	padding: 5px 9px !important;
+    min-height: auto !important;
+	margin-top:17px;
+}
+
+.MuiTabs-root.meter-data-navigation-2 button.Mui-selected {
+	color: #000!important;
+	background-color: #cce0fd!important;
+    border-radius: 5px 5px 0 0;
+	font-weight:bold;
+}
+.MuiTabs-root.meter-data-navigation-2 > .MuiTabs-indicator{
+	background-color: none!important;
+}
+
+.meter-data-meternavigation-2 > a{
+	border-radius: 5px 5px 0 0;
+	border-right:1px solid #e4e4e4;
+	border-top:1px solid #e4e4e4;
+	border-left:1px solid #e4e4e4;
+	border-bottom:none;
+	margin-right:5px;
+}
+
+.meter-data-meternavigation-2 > a:hover{
+	color: rgba(0, 0, 0, 0.6)!important;
+	background-color:#f7f9fc!important;
+}
+.statusbox{
+	height:16px!important;
+	border-radius:5px!important;
+}
+
+.MuiTabs-root.meter-data-meternavigation-3 button {
+	font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+	font-weight: 400;
+    line-height: 1.5;
+    border-radius: 5px 5px 0 0;
+    border-right: 1px solid #e4e4e4;
+    border-top: 1px solid #e4e4e4;
+    border-left: 1px solid #e4e4e4;
+    border-bottom: none;
+    margin-right: 5px;
+	color:rgb(55, 111, 208);
+	margin-right: 5px;
+	padding: 5px 9px !important;
+    min-height: auto !important;
+	margin-top:17px;
+}
+
+.MuiTabs-root.meter-data-meternavigation-3 button.Mui-selected {
+	color: #000!important;
+	background-color: #cce0fd!important;
+    border-radius: 5px 5px 0 0;
+	font-weight:bold;
+}
+.submit_btn_add {
+    margin-top: 10px !important;
+    font-size: initial !important;
+    padding: inherit !important;
+    background-color: rgba(0, 0, 0, 0.12)!important;
+}
+
+.MuiSelect-select.MuiSelect-outlined.MuiOutlinedInput-input {
+    padding-right: 18px;
+    padding: 7px 26px 8.5px 15px;
+}
+.MuiGrid-root.MuiGrid-item .donut_filter .MuiSelect-select {
+    padding: 2px 19px 2px 7px;
+}
+.MuiGrid-root.MuiGrid-item .donut_filter button {
+    padding: 2px 0 !important;
+}
+.MuiGrid-root.MuiGrid-item .donut_filter button svg {
+    font-size: 18px;
+}
+.MuiSwitch-root.MuiSwitch-sizeSmall span.Mui-checked {
+    color: rgb(59 125 221) !important;
+}
+.MuiSwitch-root.MuiSwitch-sizeSmall .MuiSwitch-switchBase {
+    color: rgb(182 204 237);
+}
+input.focus-visible:after{
+    border-bottom: 2px solid rgb(59 125 221) !important;
+}
+h6.subtitle_allocate {
+    display: revert;
+    text-align: right;
+    margin-top: -20px;
+}
+h6.subtitle_allocate svg {
+    color: #000;
+    font-size: 20px;
+    margin-top: -4px;
+}
+.subtitle_allocate {
+    position: absolute;
+    right: 50px;
+    margin-top: -19px;
+	font-size: 12px;
+	color:black;
+	font-weight: 600;
+}
+.Stats__Card-sc-1txeeq1-1 h6 {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    white-space: normal;
+}
+
+.filter_data_by_date_instant {
+    position: absolute;
+    right: 55px;
+}
+
+.css-16h5fnj-MuiGrid-root .instant_table_m {
+    margin-top: 45px;
+}
+.phasebutton1 .MuiTabs-scroller button.MuiButtonBase-root {
+    padding: 0 0 !important;
+    min-height: 22px;
+    min-width: 28px;
+    color: #fff;
+    background: #3b7ddd;
+    margin-right: 5px;
+    border-radius: 3px;
+	font-size: 12px;
+	
+}
+.phasebutton1 .MuiTabs-scroller button.Mui-selected {
+    background: #1c2430;
+}
+.phasebutton1 .MuiTabs-scroller span.MuiTabs-indicator {
+    display: none;
+}
+
+.filter_data_of_graph {
+    position: absolute;
+    right: 65px;
+    margin-top: -60px;
+}
+.desktop-logo {
+    position: fixed;
+    top: 0;
+    z-index: 999;
+    padding: 14px 15px;
+    object-fit: cover;
+    width: 216px;
+}
+.ibotside_nar>div {
+    margin-top: 80px;
+	border: none;
+}
+nav.ibotside_nar123 {
+    background-color: #233044;
+}
+.desktop-logo img {
+    height: 35px;
+}
+/* scroll bar sidemenu */
+
+.MuiPaper-root.MuiPaper-elevation::-webkit-scrollbar {
+    width: 6px;
+}
+.MuiPaper-root.MuiPaper-elevation::-webkit-scrollbar-thumb {
+    background-color: #ababab;
+    border-radius: 20px;
+	border: 0px solid #233044;
+}
+
+.MuiPaper-root.MuiPaper-elevation::-webkit-scrollbar-track {
+    background: #1e293a;
+}
+form .login_credentials {
+    display: flex;
+}
+.login_logo img {
+    filter: brightness(0);
+    margin-bottom: 20px;
+}
+.bg-primary {
+    background-color: #3b7ddd !important;
+}
+.login_logo {
+    width: 100%;
+	
+}
+img.prepaid_icon_size {
+    display: none;
+}
+.scrollbar-container {
+    padding-bottom: 120px;
+}
+
+/* apexcharts 
+ .apex_chart_override .apexcharts-bar-area {
+    fill: #407ddd ;
+    stroke: #407ddd ;
+}
+.apexcharts-bar-series.apexcharts-plot-series g:first-child path {
+    fill: #dee2e6 !important;
+    stroke: #dee2e6 !important;
+}*/
+/* g#SvgjsG1694 path {
+    fill: #dee2e6 !important;
+    stroke: #dee2e6 !important;
+} */
+	
+/* Mobile screen css */
+
+@media screen and (max-width: 600px) {
+	.MuiPaper-root.MuiPaper-elevation.MuiPaper-rounded.MuiPaper-elevation1 {
+		padding: 15px;
+	}
+	main.MuiBox-root {
+		padding-left: 0px;
+	}
+	div#simple-tabpanel-1 .MuiBox-root {
+		padding: 15px 0px;
+	}
+	.MuiDataGrid-toolbarContainer {
+		display: inline-block;
+	}
+	.text-sm-count {
+		position: inherit;
+	}
+	.MuiDataGrid-toolbarContainer>button{
+	  border: none;
+	}
+	.anshu_siddharth {
+		margin-top: -48px;
+		position: relative;
+	}
+	.anshu_siddharth .phasebutton {
+		padding: 0;
+		position: absolute;
+		left: 0;
+		right: 0px;
+		bottom: 9px;
+	}
+	.anshu_siddharth1 {
+		margin-top: -48px;
+		position: relative;
+	}
+	.anshu_siddharth1 .phasebutton {
+		padding: 0;
+		position: absolute;
+		left: 0;
+		right: 0px;
+		bottom: 65px;
+	}
+	.docnutsection {
+		padding-left: 48px !important;
+    	padding-top: 24px !important;
+	}
+	span.MuiTypography-root.MuiTypography-h6 {
+		width: 180px;
+	}
+	.prepaidtimeclass span.text-sm {
+		font-size: 10px;
+	}
+	.graph_section_P .MuiBox-root {
+		padding: 24px 0px;
+	}
+	.graph_section_P .MuiBox-root div#apexchartsc13hpbcq {
+		width: 100%;
+	}
+	.navbar_icon_t button {
+		padding: 12px 5px;
+	}
+	.navbar_icon_t input.MuiInputBase-input {
+		width: 110px;
+	}
+	.MuiGrid-root.MuiGrid-item .Sidebar__Search-sc-9bwxtg-5 input.MuiInputBase-input {
+		width: 105px;
+	}
+	.login_logo {
+		width: 100% !important;
+		border-radius: inherit !important;
+	}
+	.login_logo img {
+		margin-bottom: 20px;
+		filter: brightness(0);
+	}
+	.desktop-logo {
+		padding: 12px 17px;
+	}
+	.update_customer_page {
+		display: block;
+	}
+	.update_customer_page> div {
+		margin-bottom: 15px;
+	}
+	.mo_menulist ul {
+		margin-top: 80px;
+	}
+}
+@media screen and (max-width: 360px){
+	.navbar_icon_t button {
+		padding: 12px 3px;
+	}
+	.login_logo {
+		width: 100% !important;
+		border-radius: inherit;
+	}
+	.desktop-logo {
+		padding: 12px 17px;
+	}
+	.update_customer_page {
+		display: block;
+	}
+	.update_customer_page> div {
+		margin-bottom: 15px;
+	}
+	.mo_menulist ul {
+		margin-top: 80px;
+	}
+	
+}
+@media screen and (max-width: 280px){
+	.navbar_icon_t button {
+		padding: 12px 1px !important;
+	}
+	.MuiGrid-root.MuiGrid-item .Sidebar__Search-sc-9bwxtg-5 input.MuiInputBase-input {
+		width: 60px !important;
+	}
+	.header_menu_togl {
+		padding: 0;
+	}
+	.desktop-logo {
+		padding: 12px 17px;
+	}
+	.update_customer_page {
+		display: block;
+	}
+	.update_customer_page> div {
+		margin-bottom: 15px;
+	}
+	.mo_menulist ul {
+		margin-top: 80px;
+	}
+}
+
+@media (min-width: 1700px)
+{
+	.icons_for_card img {
+		display: block !important;
+		height: 60px !important;
+		position: absolute !important;
+		right: 20px !important;
+		bottom: 60px !important;
+	}
+	img.prepaid_icon_size{
+		display: block !important;
+		height: 60px !important;
+		position: absolute !important;
+		right: 20px !important;
+		bottom: 60px !important;
+		display: block;
+	}
+	
+}
+
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

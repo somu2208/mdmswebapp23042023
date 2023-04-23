@@ -1,0 +1,19 @@
+._underline {
+  position: relative;
+}
+
+._underline::after {
+  content: "";
+  display: block;
+  height: 5px;
+  width: 50px;
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  border-radius: 10px;
+  background: linear-gradient(
+    to right,
+    rgb(0, 147, 233) 0%,
+    rgb(128, 208, 199) 100%
+  );
+}

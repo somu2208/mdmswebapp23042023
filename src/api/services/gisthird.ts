@@ -1,0 +1,97 @@
+import http, {utilityId, access_token} from 'api/http'
+
+export const fetchSections = async () => {
+	const res = await http.get('/items/section', {
+		params: {
+			filter: {utility_id: {_eq: utilityId}},
+			access_token,
+		},
+	})
+	// console.log("section 3p: ",res.data.data)
+	return res.data.data
+}
+
+export const fetchAreas = async ({sectionId}: {sectionId: string}) => {
+	const res = await http.get('/items/area', {
+		params: {
+			filter: {section_id: {_eq: sectionId}},
+			access_token,
+		},
+	})
+	// console.log("Area 1p: ",res.data.data)
+	return res.data.data
+}
+
+export const fetchMapData = async ({
+	areaId,
+	meterState,
+}: {
+	areaId?: string
+	meterState?: 'all' | 'active' | 'inactive'
+}) => {
+	const params = {
+		// access_token,
+		// fields: '*.*',
+		// filter: {   
+		// 	"meter_serial_number": {
+		// 	"meter_connection_type": {
+		// 		"_eq": "2"
+		// 	}
+		// }},
+		
+	// 	params : {
+			access_token,
+			fields: '*.*',
+			filter: {  "_and": [{ 
+				"meter_serial_number": {
+				"meter_connection_type": {
+					"_eq": "2"
+				}
+			}},
+			{ utility_id: { "_eq" : utilityId}},
+		],}
+	
+	}
+
+	//!areaId && delete params.filter.area_id
+
+	const res = await http.get('/items/consumer', {
+		params,
+	})
+
+	// console.log("Map Data ",res.data.data)
+
+	const data = res.data.data
+		.map((item) => ({
+			lat: item?.latitude,
+			long: item?.longitude,
+			isActive: item?.meter_serial_number?.power_status === 'On' ? true : false,
+			meterId: item?.meter_serial_number?.meter_serial_number,
+		}))
+		?.filter((item) => {
+			if (item.lat === null || item.long === null) {
+				return false
+			} else {
+				return true
+			}
+		})
+
+	if (meterState === 'active')
+		return {
+			data: data.filter((item) => item?.isActive),
+			activeCount: data.filter((item) => item?.isActive)?.length,
+			inactiveCount: 0,
+		}
+	if (meterState === 'inactive')
+		return {
+			data: data.filter((item) => !item?.isActive),
+			activeCount: 0,
+			inactiveCount: data.filter((item) => !item?.isActive)?.length,
+		}
+
+	return {
+		data: data,
+		activeCount: data.filter((item) => item?.isActive)?.length,
+		inactiveCount: data.filter((item) => !item?.isActive)?.length,
+	}
+}

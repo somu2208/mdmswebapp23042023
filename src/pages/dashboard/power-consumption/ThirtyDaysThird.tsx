@@ -1,0 +1,106 @@
+import {Button, CircularProgress, TextField} from '@mui/material'
+import {fetchPowerConsumptionOf30DaysThird} from 'api/services/dashboard'
+import {useQuery} from 'react-query'
+import Chart from 'react-apexcharts'
+import ChartWrapper from 'components/ChartWrapper'
+import {ApexOptions} from 'apexcharts'
+import format from 'date-fns/format'
+import add from 'date-fns/add'
+import {CHART_HEIGHT} from 'constants/index'
+
+const ThirtyDaysThird = () => {
+	const {data, isLoading, error} = useQuery(
+		'consumptionInOfThirtyDaysThird',
+		fetchPowerConsumptionOf30DaysThird
+	)
+/* 	const newdatatime = data?.data?.data
+	const xaxis = newdatatime?.map((item) => item.source_date) */
+	/*const xaxis = data?.data?.data
+		?.map((item) => item.date)
+		?.map((item) => format(new Date(item), 'yyyy-MM-dd'))*/
+		
+
+		const time_array=[];
+		const xaxis = data?.data?.data?.map((item) =>{
+		  time_array.push(`${item.source_timestamp_day}/${item.source_timestamp_month}/${item.source_timestamp_year}`);
+		})
+		console.log(data?.data);
+	const values = data?.data?.data?.map((item) =>
+		(item.sum.energy_wh_import / 1000).toFixed(2)
+	)
+//console.log('#p#0Days'+values);
+	if (isLoading) return <CircularProgress />
+
+	return (
+		<>
+			<Chart
+				height={CHART_HEIGHT}
+				type='line'
+				id='month-wise-consumption'
+				options={{
+					chart: {id: 'monthly-consumption'},
+					xaxis: {
+						categories: time_array,
+						title: {text: 'Date'},
+						labels: {
+							style: {
+								fontSize: '12px',
+							},
+						},
+					},
+					markers: {
+						size: 5,
+					},
+					yaxis: {
+						title: {text: 'kWh'},
+						labels: {
+							style: {
+								fontSize: '12px',
+							},
+						},
+					},
+					...chartOptions,
+				}}
+				series={[
+					{
+						name: 'KWh',
+						data: values,
+					},
+				]}
+			/>
+		</>
+	)
+}
+
+export default ThirtyDaysThird;
+
+const chartOptions: ApexOptions = {
+	legend: {
+		position: 'top',
+		offsetY: 0,
+	},
+	stroke: {
+		curve: 'smooth',
+	},
+	dataLabels: {
+		enabled: true,
+		// offsetY: -20,
+		offsetY: 0,
+		style: {
+			colors: ['#2297e5'],
+			fontSize: '12px',
+		},
+	},
+	chart: {
+		toolbar: {
+			show: false
+		},
+	},
+	plotOptions: {
+		bar: {
+			dataLabels: {
+				position: 'top',
+			},
+		},
+	},
+}

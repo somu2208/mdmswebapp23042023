@@ -1,0 +1,124 @@
+import {KeyboardBackspace} from '@mui/icons-material'
+import {Button} from '@mui/material'
+import {
+	Outlet,
+	Routes,
+	Route,
+	NavLink,
+	useResolvedPath,
+	useMatch,
+	useSearchParams,
+	useNavigate,
+	useParams,
+} from 'react-router-dom'
+import Billing from './Billing'
+import BlockLoad from './BlockLoad'
+import ConsumerDetails from './ConsumerDetails'
+import DailyLoad from './DailyLoad'
+import Events from './Events'
+import Instantaneous from './Instantaneous'
+import NamePlateDetails from './NamePlateDetails'
+import _DataProvider from './_DataProvider'
+
+const Meters360 = () => {
+	return (
+		<_DataProvider>
+			<Routes>
+				<Route element={<Layout />}>
+					<Route index element={<ConsumerDetails />} />
+					{routes.map(({path, component: Component}) => (
+						<Route path={path} element={<Component />} />
+					))}
+				</Route>
+			</Routes>
+		</_DataProvider>
+	)
+}
+
+export default Meters360
+
+const Layout = () => {
+	const navigate = useNavigate()
+	const params = useParams()
+	return (
+		<div className='p-5'>
+			<div className='pb-3 flex items-center gap-6'>
+				<Button
+					size='small'
+					color='secondary'
+					startIcon={<KeyboardBackspace />}
+					onClick={() => navigate(`/meters`)}
+				>
+					Back
+				</Button>
+				<p>Meter serial number : {params?.meterId}</p>
+			</div>
+			<nav className='flex items-center list-none'>
+				{routes.map((item) => (
+					<NavItem key={item.name} label={item.name} to={item.path} />
+				))}
+			</nav>
+			<main className='mt-5'>
+				<Outlet />
+			</main>
+		</div>
+	)
+}
+
+const NavItem = ({label, to}) => {
+	let mypath = to
+	let resolved = useResolvedPath(mypath)
+	let match = useMatch({path: resolved.pathname, end: true})
+	const [search] = useSearchParams()
+
+	return (
+		<NavLink
+			to={{pathname: to, search: search.toString()}}
+			className={`p-1.5 px-3 cursor-pointer hover:bg-gray-100 ${
+				match
+					? 'border-t-2 border-primary bg-gray-200'
+					: 'border-t-2 border-transparent'
+			}`}
+		>
+			{label}
+		</NavLink>
+	)
+}
+
+const routes = [
+	{
+		path: 'instantaneous',
+		name: 'Instantaneous',
+		component: Instantaneous,
+	},
+	{
+		path: 'block-load',
+		name: 'Block Load',
+		component: BlockLoad,
+	},
+	{
+		path: 'daily-load',
+		name: 'Daily Load',
+		component: DailyLoad,
+	},
+	{
+		path: 'billing',
+		name: 'Billing',
+		component: Billing,
+	},
+	{
+		path: 'events',
+		name: 'Events',
+		component: Events,
+	},
+	{
+		path: 'customer-details',
+		name: 'Consumer Details',
+		component: ConsumerDetails,
+	},
+	{
+		path: 'name-plate-details',
+		name: 'Name Plate Details',
+		component: NamePlateDetails,
+	},
+]

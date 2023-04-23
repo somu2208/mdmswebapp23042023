@@ -1,0 +1,17 @@
+import Card from './components/DetailsCard'
+const PersonalDetails = ({title, children}) => {
+	
+	return (
+		<Card title={title}>
+			<div className='grid w-full'>
+				{children}
+				<div className='col-span-4 flex gap-4 items-center mt-5'>
+					
+				</div>
+			</div>
+		</Card>
+	)
+}
+
+
+export default PersonalDetails

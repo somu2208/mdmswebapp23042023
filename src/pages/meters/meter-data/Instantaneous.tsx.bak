@@ -1,0 +1,185 @@
+import { Button, CircularProgress, Pagination, Grid, Typography } from '@mui/material'
+import { fetchMeter360DataLoad } from 'api/services/meters'
+import Table from 'components/table'
+import { addDays, format } from 'date-fns'
+import { subDays } from 'date-fns/esm'
+import { useEffect, useState } from 'react'
+import { useMutation } from 'react-query'
+import { useParams, useSearchParams } from 'react-router-dom'
+import { add5Hr30Min } from 'utils'
+import {
+	instantPhase1columns,
+	instantPhase2columns,
+} from '../meters360/Instantaneous'
+
+const Instantaneous = () => {
+	// const [page, setPage] = useState<number>(1)
+	const [page, setPage] = useState(1)
+	const [currentDate, setCurrentDate] = useState(new Date())
+
+	const [search] = useSearchParams()
+	const phaseId = search.get('phase')
+	const params = useParams()
+	const key =
+		phaseId === 'single-phase'
+			? 'meter_instantaneous_profile_single_phase_synctime'
+			: 'meter_instantaneous_profile_three_phase_synctime'
+
+	const {
+		data,
+		error,
+		isLoading: loading,
+		mutate,
+	} = useMutation('meter360DataInstantaneous', fetchMeter360DataLoad)
+
+	const handlePrev = () => {
+		mutate({
+			key,
+			meterId: params.meterId,
+			page,
+			date: subDays(currentDate, 1),
+		})
+		setCurrentDate(subDays(currentDate, 1))
+	}
+	const handleNext = () => {
+		mutate({
+			key,
+			meterId: params.meterId,
+			page,
+			date: addDays(currentDate, 1),
+		})
+		setCurrentDate(addDays(currentDate, 1))
+	}
+
+	useEffect(() => {
+		mutate({
+			key,
+			meterId: params.meterId,
+			page,
+			date: new Date(),
+		})
+	}, [])
+
+	return (
+		<>
+			{/* <div className='flex py-2'> */}
+			<Grid md={12} py={1} ml={1} sx={{ display: "flex" }}>
+				{/* <div className='flex gap-2 items-center border border-gray-300 rounded-md'> */}
+
+				<Typography variant="h5"> Instantaneous </Typography>
+
+				<Grid sx={{ display: "flex", textAlign: "right" }} className="gap-2 border border-gray-300 rounded-md filter_data_by_date_instant">
+					<Button size='small' color='secondary' onClick={handlePrev}>
+						Prev
+					</Button>
+					<Typography mt={1.1}>{format(currentDate, 'dd/MM/yyyy')}</Typography>
+					<Button
+						disabled={addDays(currentDate, 1) > new Date()}
+						size='small'
+						color='secondary'
+						onClick={handleNext}
+					>
+						Next
+					</Button>
+				</Grid>
+			</Grid>
+			{/* </div> */}
+			{loading ? (
+				<CircularProgress />
+			) : (
+				<Grid mt={2}>
+					<TableComponent
+						tableData={data}
+						page={page}
+						date={currentDate}
+						meterId={params?.meterId}
+						mutate={mutate}
+						phaseId={phaseId}
+						setPage={setPage}
+						phaseKey={key}
+						loading={loading}
+						error={error}
+					/>
+				</Grid>
+			)}
+		</>
+	)
+}
+
+const TableComponent = ({
+	setPage,
+	mutate,
+	date,
+	meterId,
+	phaseKey,
+	phaseId,
+	tableData,
+	page,
+	loading,
+	error,
+}) => {
+	const handleChange = (event, value) => {
+		setPage(value)
+		mutate({
+			page: value,
+			date,
+			meterId,
+			key: phaseKey,
+		})
+	}
+
+	if (error) return <Typography>Server Error</Typography>
+	// if (tableData?.data?.length === 0)
+	// 	return <Typography sx={{ textAlign: "center" }}>No data</Typography>
+	return (
+		<>
+			<Grid md={12} sx={{ backgroundColor: "white", p: 1 }} className="rounded-xl instant_table_m">
+				{/* <div className='text-sm text-right'> */}
+
+
+				{tableData?.data?.length ? (
+					<>
+						<Grid className='text-sm-count text-right'>
+							<Typography>Total Count: {tableData?.meta?.filter_count}</Typography>
+						</Grid>					
+						
+						{phaseId === 'single-phase' && (
+							<Grid>
+								<Table
+									tableData={tableData?.data}
+									columns={instantPhase1columns}
+									loading={loading}
+								/>
+							</Grid>
+						)}
+						{phaseId === 'three-phase' && (
+							<Table
+								tableData={tableData?.data}
+								columns={instantPhase2columns}
+								loading={loading}
+							/>
+						)}
+
+						{/* <div className='flex justify-between mt-5'>
+							<p className='text-gray-600'>{`Page : ${page}/${Math.ceil(
+								tableData?.meta?.filter_count / 10
+							)}`}</p>
+							<Pagination
+								variant='outlined'
+								shape='rounded'
+								count={Math.ceil(tableData?.meta?.filter_count / 10)}
+								page={page}
+								onChange={handleChange}
+							/>
+						</div> */}
+					</>
+				) : (
+					<Typography sx={{ textAlign: "center" }}> No Data </Typography>
+				)}
+
+			</Grid>
+		</>
+	)
+}
+
+export default Instantaneous

@@ -1,0 +1,836 @@
+import { CircularProgress, Pagination, Typography, Grid, Box } from '@mui/material'
+import { exportMeter360Data, fetchMeter360Data } from 'api/services/meters'
+import ExportToExcel from 'components/ExportToExcel'
+import Table from 'components/table'
+import { useEffect, useState } from 'react'
+import { useMutation } from 'react-query'
+import { useParams, useSearchParams } from 'react-router-dom'
+import { add5Hr30Min, captureTimeFormat } from 'utils'
+import Filters from './Filters'
+import { useMeterData } from './_DataProvider'
+
+const Instantaneous = () => {
+	const {
+		data,
+		error,
+		isLoading: loading,
+		mutate,
+	} = useMutation('meter360DataInstantaneous', fetchMeter360Data)
+	
+	console.log(data);
+	
+	const params = useParams()
+	const meterId = params.meterId
+
+	const { fromDate, toDate } = useMeterData()
+	const [page, setPage] = useState(1)
+
+	const [search] = useSearchParams()
+	const phaseId = search.get('phase')
+	const key =
+		phaseId === '1'
+			? 'meter_instantaneous_profile_single_phase'
+			: 'meter_instantaneous_profile_three_phase'
+
+	useEffect(() => {
+		mutate({
+			fromDate,
+			toDate,
+			key,
+			meterId: params.meterId,
+			page,
+		})
+	}, [])
+
+	return (
+		<>
+			<Grid className='pb-2 flex justify-end items-center gap-2 innnerbox'>
+				{/* <ExportToExcel
+					asyncExportMethod={handleExport}
+					labels={phaseId === '1' ? instantPhase1columns : instantPhase2columns}
+				/> */}
+				<Grid md={12} container>
+					<Grid md={3} >
+						<Typography variant="h5" mt={1}> Instantaneous </Typography>
+					</Grid>
+					<Grid md={9}>
+						<Filters
+							mutate={() =>
+								mutate({
+									fromDate,
+									toDate,
+									key,
+									meterId: params.meterId,
+									page,
+								})
+							}
+							page={page}
+							key={key}
+						/>
+					</Grid>
+				</Grid>
+			</Grid>
+			{loading ? (
+				<Grid sx={{textAlign:"center", mt:5}}> <CircularProgress /> </Grid>
+			) : (
+				<Grid mt={1}>
+					{data ? (
+						<>
+							<TableComponent
+								data={data}
+								page={page}
+								toDate={toDate}
+								fromDate={fromDate}
+								meterId={params?.meterId}
+								mutate={mutate}
+								phaseId={phaseId}
+								setPage={setPage}
+								phaseKey={key}
+								loading={loading}
+								error={error}
+							/>
+						</>
+					) : (
+						<Typography sx={{textAlign:"center",mt:5}} >No records found</Typography>
+					)}
+				</Grid>
+			)}
+		</>
+	)
+}
+
+const TableComponent = ({
+	setPage,
+	mutate,
+	fromDate,
+	toDate,
+	meterId,
+	phaseKey,
+	phaseId,
+	data,
+	page,
+	loading,
+	error,
+}) => {
+	const handleChange = (event, value) => {
+		setPage(value)
+		mutate({
+			page: value,
+			fromDate,
+			toDate,
+			meterId,
+			key: phaseKey,
+		})
+	}
+
+	if (error) return <Typography>Server Error</Typography>
+	if (data?.data?.length === 0)
+		return <Typography sx={{ textAlign: "center" }}>No data</Typography>
+	console.log(data)
+	return (
+		
+		<>
+			<Grid sx={{ backgroundColor: "white", p: 2 }} className="rounded-lg">
+				<Grid className='text-sm-count text-right'>
+					<Typography>Total Count: {data?.meta?.filter_count}</Typography>
+				</Grid>
+				{phaseId === '1' && (
+					<Grid>
+						<Table
+							tableData={data.data}
+							columns={instantPhase1columns}
+							loading={loading}
+						/>
+					</Grid>
+				)}
+				{phaseId === '2' && (
+					<Table
+						tableData={data?.data}
+						columns={instantPhase2columns}
+						loading={loading}
+					/>
+				)}
+
+				{/* <div className='flex justify-between mt-5'>
+				<p className='text-gray-600'>{`Page : ${page}/${Math.ceil(
+					data?.meta?.filter_count / 10
+				)}`}</p>
+				<Pagination
+					variant='outlined'
+					shape='rounded'
+					count={Math.ceil(data?.meta?.filter_count / 10)}
+					page={page}
+					onChange={handleChange}
+				/>
+			</div> */}
+			</Grid>
+		</>
+	)
+}
+
+export default Instantaneous
+
+export const instantPhase1columns = [
+	{
+		field: 'meter_serial_number',
+		headerName: 'Meter serial number',
+		width: 160,
+		// key: 'meter_serial_number', 
+		// title: 'Meter Serial Number'
+	},
+	{
+		field: 'source_timestamp',
+		headerName: 'Meter timestamp',
+		width: 150,
+		renderCell: (item) => {
+			if (item?.row?.source_timestamp) {
+				const value = item?.row?.source_timestamp && add5Hr30Min(item?.row?.source_timestamp);
+				return (value);
+			}
+		}
+		// key: 'source_timestamp',
+		// title: 'Meter Timestamp',
+		// render: (value) => {
+		// 	return value && add5Hr30Min(value)
+		// },
+	},
+	{
+		field: 'server_timestamp',
+		headerName: 'Server timestamp',
+		width: 150,
+		renderCell: (item) => {
+			if (item?.row?.server_timestamp) {
+				const value = item?.row?.server_timestamp && add5Hr30Min(item?.row?.server_timestamp);
+				return (value);
+			}
+		}
+		// key: 'server_timestamp',
+		// title: 'Server Timestamp',
+		// render: (value) => value && add5Hr30Min(value),
+	},
+	{
+		field: 'cumulative_billing_count',
+		headerName: 'Cumulative billing count',
+		width: 190,
+		// hide: 'true',
+		// key: 'cumulative_billing_count', 
+		// title: 'Cumulative Billing Count'
+	},
+	{
+		field: 'voltage',
+		headerName: 'Voltage (V)',
+		width: 100,
+		// key: 'voltage', 
+		// title: 'Voltage (V)'
+	},
+	{
+		field: 'phase_current',
+		headerName: 'Phase current (A)',
+		width: 150,
+		// key: 'phase_current', 
+		// title: 'Phase Current (A)'
+	},
+	{
+		field: 'neutral_current',
+		headerName: 'Neutral current (A)',
+		width: 150,
+		// key: 'neutral_current', 
+		// title: 'Neutral Current (A)'
+	},
+	{
+		field: 'signed_power_factor',
+		headerName: 'Signed power factor',
+		width: 160,
+		// key: 'signed_power_factor', 
+		// title: 'Signed Power Factor'
+	},
+	{
+		field: 'frequency',
+		headerName: 'Frequency(Hz)',
+		width: 150,
+		hide: 'true',
+		// key: 'frequency', 
+		// title: 'Frequency(Hz)'
+	},
+	{
+		field: 'apparent_power',
+		headerName: 'Apparent power(VA)',
+		width: 160,
+		hide: 'true',
+		// key: 'apparent_power', 
+		// title: 'Apparent Power(VA)'
+	},
+	{
+		field: 'active_power',
+		headerName: 'Active power(W)',
+		hide: 'true',
+		width: 150,
+		// key: 'active_power', 
+		// title: 'Active Power(W)'
+	},
+	{
+		field: 'cumulative_energy_kWh_import',
+		headerName: 'Cumulative energy import KWh',
+		hide: 'true',
+		width: 225,
+		renderCell: (item) => {
+			if (item?.row?.cumulative_energy_kWh_import) {
+				const value = (item?.row?.cumulative_energy_kWh_import / 1000).toFixed(2);
+				return (value);
+			}
+		}
+		// key: 'cumulative_energy_kWh_import',
+		// title: 'Cumulative Energy Import KWh',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumulative_energy_kVAh_import',
+		headerName: 'Cumulative energy import KVAh',
+		hide: 'true',
+		width: 225,
+		renderCell: (item) => {
+			if (item?.row?.cumulative_energy_kVAh_import) {
+				const value = (item?.row?.cumulative_energy_kVAh_import / 1000).toFixed(2);
+				return (value);
+			}
+		}
+		// key: 'cumulative_energy_kVAh_import',
+		// title: 'Cumulative Energy Import KVAh',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'maximum_demand_kW',
+		headerName: 'Maximum demand KW',
+		hide: 'true',
+		width: 170,
+		renderCell: (item) => {
+			if (item?.row?.maximum_demand_kW) {
+				const value = (item?.row?.maximum_demand_kW / 1000).toFixed(2);
+				return (value);
+			}
+		}
+		// key: 'maximum_demand_kW',
+		// title: 'Maximum Demand KW',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	// {
+	// 	key: 'maximum_demand_kW_capture_time',
+	// 	title: 'Maximum KW Capture Time',
+	// 	render: (value) => value && captureTimeFormat(value),
+	// },
+
+	// {
+	// 	key: 'maximum_demand_kVA',
+	// 	title: 'Maximum Demand KVA',
+	// 	render: (value) => (value / 1000).toFixed(2),
+	// },
+	// {
+	// 	key: 'maximum_demand_kVA_capture_time',
+	// 	title: 'Maximum Demand KVA Capture Time',
+	// 	render: (value) => value && captureTimeFormat(value),
+	// },
+	{
+		field: 'cumulative_power_on_duration',
+		headerName: 'Cumulative power on duration(hours)',
+		hide: 'true',
+		width: 270,
+		renderCell: (item) => {
+			if (item?.row?.cumulative_power_on_duration) {
+				const value = (item?.row?.cumulative_power_on_duration / 60).toFixed(2);
+				return (value);
+			}
+		}
+		// key: 'cumulative_power_on_duration',
+		// title: 'Cumulative Power On Duration(Hours)',
+		// render: (value) => (value / 60).toFixed(2),
+	},
+	{
+		field: 'cumulative_tamper_count',
+		headerName: 'Cumulative tamper count',
+		hide: 'true',
+		width: 200,
+		// key: 'cumulative_tamper_count', 
+		// title: 'Cumulative Tamper Count'
+	},
+	{
+		field: 'cumulative_program_count',
+		headerName: 'Cumulative program count',
+		hide: 'true',
+		width: 200,
+		// key: 'cumulative_program_count', 
+		// title: 'Cumulative Program Count'
+	},
+	{
+		field: 'cumulative_energy_kWh_export',
+		headerName: 'Cumulative energy KWh export',
+		hide: 'true',
+		width: 225,
+		renderCell: (item) => {
+			if (item?.row?.cumulative_energy_kWh_export) {
+				const value = (item?.row?.cumulative_energy_kWh_export / 1000).toFixed(2);
+				return (value);
+			}
+		}
+		// key: 'cumulative_energy_kWh_export',
+		// title: 'Cumulative Energy KWh Export',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumulative_energy_kVAh_export',
+		headerName: 'Cumulative energy KVAh export',
+		hide: 'true',
+		width: 225,
+		renderCell: (item) => {
+			if (item?.row?.cumulative_energy_kVAh_export) {
+				const value = (item?.row?.cumulative_energy_kVAh_export / 1000).toFixed(2);
+				return (value);
+			}
+		}
+		// key: 'cumulative_energy_kVAh_export',
+		// title: 'Cumulative Energy KVAh Export',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'load_limit_function_status',
+		headerName: 'Load limit function status',
+		hide: 'true',
+		width: 200,
+		// key: 'load_limit_function_status', 
+		// title: 'Load limit function status'
+	},
+	{
+		field: 'load_limit_value_kw',
+		headerName: 'Load limit value KW',
+		hide: 'true',
+		width: 180,
+		renderCell: (item) => {
+			if (item?.row?.load_limit_value_kw) {
+				const value = (item?.row?.load_limit_value_kw / 1000).toFixed(2);
+				return (value);
+			}
+		}
+		// key: 'load_limit_value_kw',
+		// title: 'Load Limit Value KW',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	// {
+	// 	key: 'cumulative_power_off_duration',
+	// 	title: 'Cumulative power off duration',
+	// },
+	// {
+	// 	key: 'last_billing_date',
+	// 	title: 'Last Billing Date',
+	// 	render: (value) => value && add5Hr30Min(value),
+	// },
+	// {
+	// 	key: 'cumulative_no_of_power_failures',
+	// 	title: 'Cumulative no of power failures',
+	// },
+	// {key: 'utility_id', title: 'Utility id'},
+]
+
+export const instantPhase2columns = [
+	{
+		field: 'meter_serial_number',
+		headerName: 'Meter serial number',
+		width: 200,
+		// key: 'meter_serial_number', 
+		// title: 'Meter Serial Number'
+	},
+	{
+		field: 'source_timestamp',
+		headerName: 'Meter timestamp',
+		width: 150,
+		renderCell:(item) => {
+			if(item?.row?.source_timestamp){
+				const value = item?.row?.source_timestamp && add5Hr30Min(item?.row?.source_timestamp);
+				return(value);
+			}
+		}
+		// key: 'source_timestamp',
+		// title: 'Meter Timestamp',
+		// render: (value) => value && add5Hr30Min(value),
+	},
+	{
+		field: 'server_timestamp',
+		headerName: 'Server timestamp',
+		width: 150,
+		renderCell:(item) => {
+			if(item?.row?.server_timestamp){
+				const value = item?.row?.server_timestamp && add5Hr30Min(item?.row?.server_timestamp);
+				return(value);
+			}
+		}
+		// key: 'server_timestamp',
+		// title: 'Server Timestamp',
+		// render: (value) => value && add5Hr30Min(value),
+	},
+	{
+		field: 'l1_current',
+		headerName: 'L1 current(A)',
+		width: 120,
+		// key: 'l1_current', 
+		// title: 'L1 Current(A)'
+	},
+	{
+		field: 'l2_current',
+		headerName: 'L2 current(A)',
+		width: 120,
+		// key: 'l2_current', 
+		// title: 'L2 Current(A)'
+	},
+	{
+		field: 'l3_current',
+		headerName: 'L3 current(A)',
+		width: 120,
+		// key: 'l3_current', 
+		// title: 'L3 Current(A)'
+	},
+	{
+		field: 'l1_voltage',
+		headerName: 'L1 voltage(V)',
+		width: 120,
+		// key: 'l1_voltage', 
+		// title: 'L1 Voltage(V)'
+	},
+	{
+		field: 'l2_voltage',
+		headerName: 'L2 voltage(V)',
+		hide: 'true',
+		width: 120,
+		// key: 'l2_voltage', 
+		// title: 'L2 Voltage(V)'
+	},
+	{
+		field: 'l3_voltage',
+		headerName: 'L3 voltage(V)',
+		hide: 'true',
+		width: 150,
+		// key: 'l3_voltage', 
+		// title: 'L3 Voltage(V)'
+	},
+
+	{
+		field: 'l1_signed_power_factor',
+		headerName: 'L1 signedn power factor',
+		hide: 'true',
+		width: 220,
+		// key: 'l1_signed_power_factor', 
+		// title: 'L1 Signed Power Factor'
+	},
+	{
+		field: 'l2_signed_power_factor',
+		headerName: 'L2 signed power factor',
+		hide: 'true',
+		width: 200,
+		// key: 'l2_signed_power_factor', 
+		// title: 'L2 Signed Power Factor'
+	},
+	{
+		field: 'l3_signed_power_factor',
+		headerName: 'L3 signed power factor',
+		hide: 'true',
+		width: 220,
+		// key: 'l3_signed_power_factor', 
+		// title: 'L3 Signed Power Factor'
+	},
+	{
+		field: 'frequency',
+		headerName: 'Frequency',
+		hide: 'true',
+		width: 100,
+		// key: 'frequency', 
+		// title: 'Frequency'
+	},
+	{
+		field: 'signed_three_phase_power_factor',
+		headerName: 'Signed three phase power factor',
+		hide: 'true',
+		width: 250,
+		// key: 'signed_three_phase_power_factor',
+		// title: 'Signed Three Phase Power Factor',
+	},
+	{
+		field: 'frequency',
+		headerName: 'Frequency(Hz)',
+		hide: 'true',
+		width: 120,
+		// key: 'frequency', 
+		// title: 'Frequency(Hz)'
+	},
+	{
+		field: 'apparent_power',
+		headerName: 'Apparent power(KVA)',
+		hide: 'true',
+		width: 170,
+		renderCell: (item) => {
+			if (item?.row?.apparent_power) {
+				const value = (item?.row?.apparent_power / 1000).toFixed(2);
+				return (value);
+			}
+		},
+		// key: 'apparent_power',
+		// title: 'Apparent Power(KVA)',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'signed_active_power',
+		headerName: 'Signed active power(KVA)',
+		hide: 'true',
+		width: 200,
+		renderCell: (item) => {
+			if (item?.row?.signed_active_power) {
+				const value = (item?.row?.signed_active_power / 1000).toFixed(2);
+				return (value);
+			}
+		},
+		// key: 'signed_active_power',
+		// title: 'Signed Active Power(KVA)',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'signed_reactive_power',
+		headerName: 'Signed reactive power(KVAR)',
+		hide: 'true',
+		width: 250,
+		renderCell: (item) => {
+			if (item?.row?.signed_reactive_power) {
+				const value = (item?.row?.signed_reactive_power / 1000).toFixed(2);
+				return (value);
+			}
+		},
+		// key: 'signed_reactive_power',
+		// title: 'Signed Reactive Power(KVAR)',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'no_of_power_failures',
+		headerName: 'No. of power failures',
+		hide: 'true',
+		width: 200,
+		// key: 'no_of_power_failures', 
+		// title: 'No. of Power Failures'
+	},
+	{
+		field: 'cumulative_power_off_duration',
+		headerName: 'Cumulative power off duration(Hours)',
+		hide: 'true',
+		width: 270,
+		renderCell: (item) => {
+			if (item?.row?.cumulative_power_off_duration) {
+				const value = (item?.row?.cumulative_power_off_duration / 60).toFixed(2);
+				return (value);
+			}
+		},
+		// key: 'cumulative_power_off_duration',
+		// title: 'Cumulative Power Off Duration(Hours)',
+		// render: (value) => (value / 60).toFixed(2),
+	},
+	{
+		field: 'cumulative_tamper_count',
+		headerName: 'Cumulative tamper count',
+		hide: 'true',
+		width: 200,
+		// key: 'cumulative_tamper_count', 
+		// title: 'Cumulative Tamper Count'
+	},
+	{
+		field: 'cumulative_billing_count',
+		headerName: 'Cumulative billing count',
+		hide: 'true',
+		width: 200,
+		// key: 'cumulative_billing_count', 
+		// title: 'Cumulative Billing Count'
+	},
+	{
+		field: 'cumulative_energy_Wh_import',
+		headerName: 'Cumulative energy KWh import',
+		hide: 'true',
+		width: 220,
+		renderCell: (item) => {
+			if (item?.row?.cumulative_energy_Wh_import) {
+				const value = (item?.row?.cumulative_energy_Wh_import / 1000).toFixed(2);
+				return (value);
+			}
+		},
+		// key: 'cumulative_energy_Wh_import',
+		// title: 'Cumulative Energy KWh Import',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumulative_energy_Wh_export',
+		headerName: 'Cumulative energy Wh export',
+		hide: 'true',
+		width: 220,
+		renderCell: (item) => {
+			if (item?.row?.cumulative_energy_Wh_export) {
+				const value = (item?.row?.cumulative_energy_Wh_export / 1000).toFixed(2);
+				return (value);
+			}
+		},
+		// key: 'cumulative_energy_Wh_export',
+		// title: 'Cumulative Energy Wh Export',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumulative_energy_VAh_export',
+		headerName: 'Cumulative energy VAh export',
+		hide: 'true',
+		width: 250,
+		renderCell: (item) => {
+			if (item?.row?.cumulative_energy_VAh_export) {
+				const value = (item?.row?.cumulative_energy_VAh_export / 1000).toFixed(2);
+				return (value);
+			}
+		},
+		// key: 'cumulative_energy_VAh_export',
+		// title: 'Cumulative Energy VAh Export',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumulative_energy_VAh_import',
+		headerName: 'Cumulative energy VAh import',
+		hide: 'true',
+		width: 250,
+		renderCell: (item) => {
+			if (item?.row?.cumulative_energy_VAh_import) {
+				const value = (item?.row?.cumulative_energy_VAh_import / 1000).toFixed(2);
+				return (value);
+			}
+		},
+		// key: 'cumulative_energy_VAh_import',
+		// title: 'Cumulative Energy VAh Import',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'maximum_demand_active_import',
+		headerName: 'Maximum demand active import',
+		hide: 'true',
+		width: 230,
+		// key: 'maximum_demand_active_import', 
+		// title: 'Maximum Demand Active Import'
+	},
+	// {
+	// 	key: 'maximum_demand_active_import_capture_time',
+	// 	title: 'Maximum Demand Active Import Capture Time',
+	// render: (value) => value && captureTimeFormat(value),
+	// },
+	{
+		field: 'maximum_demand_apparent_import',
+		headerName: 'Maximum demand apparent import(KVA)',
+		hide: 'true',
+		width: 290,
+		renderCell: (item) => {
+			if (item?.row?.maximum_demand_apparent_import) {
+				const value = (item?.row?.maximum_demand_apparent_import / 1000).toFixed(2);
+				return (value);
+			}
+		},
+		// key: 'maximum_demand_apparent_import',
+		// title: 'Maximum Demand Apparent Import(KVA)',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	// {
+	// 	key: 'maximum_demand_apparent_import_capture_time',
+	// 	title: 'Maximum Demand Apparent Import Capture Time',
+	// render: (value) => value && captureTimeFormat(value),
+	// },
+	{
+		field: 'load_limit_function_status',
+		headerName: 'Load limit function status',
+		hide: 'true',
+		width: 250,
+		// key: 'load_limit_function_status', 
+		// title: 'Load Limit Function Status'
+	},
+	{
+		field: 'load_limit_value_W',
+		headerName: 'Load limit value KW',
+		hide: 'true',
+		width: 180,
+		renderCell: (item) => {
+			if (item?.row?.load_limit_value_W) {
+				const value = (item?.row?.load_limit_value_W / 1000).toFixed(2);
+				return (value);
+			}
+		},
+		// key: 'load_limit_value_W',
+		// title: 'Load Limit Value KW',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumulative_energy_VArh_Q1',
+		headerName: 'Cumulative energy KVArh Q1',
+		hide: 'true',
+		width: 220,
+		renderCell: (item) => {
+			if (item?.row?.cumulative_energy_VArh_Q1) {
+				const value = (item?.row?.cumulative_energy_VArh_Q1 / 1000).toFixed(2);
+				return (value);
+			}
+		},
+		// key: 'cumulative_energy_VArh_Q1',
+		// title: 'Cumulative Energy KVArh Q1',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumulative_energy_VArh_Q2',
+		headerName: 'Cumulative energy KVArh Q2',
+		hide: 'true',
+		width: 220,
+		renderCell: (item) => {
+			if (item?.row?.cumulative_energy_VArh_Q2) {
+				const value = (item?.row?.cumulative_energy_VArh_Q2 / 1000).toFixed(2);
+				return (value);
+			}
+		},
+		// key: 'cumulative_energy_VArh_Q2',
+		// title: 'Cumulative Energy KVArh Q2',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumulative_energy_VArh_Q3',
+		headerName: 'Cumulative energy KVArh Q3',
+		hide: 'true',
+		width: 220,
+		renderCell: (item) => {
+			if (item?.row?.cumulative_energy_VArh_Q3) {
+				const value = (item?.row?.cumulative_energy_VArh_Q3 / 1000).toFixed(2);
+				return (value);
+			}
+		},
+		// key: 'cumulative_energy_VArh_Q3',
+		// title: 'Cumulative Energy KVArh Q3',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumulative_energy_VArh_Q4',
+		headerName: 'Cumulative energy KVArh Q4',
+		hide: 'true',
+		width: 220,
+		renderCell: (item) => {
+			if (item?.row?.cumulative_energy_VArh_Q4) {
+				const value = (item?.row?.cumulative_energy_VArh_Q4 / 1000).toFixed(2);
+				return (value);
+			}
+		},
+		// key: 'cumulative_energy_VArh_Q4',
+		// title: 'Cumulative Energy KVArh Q4',
+		// render: (value) => (value / 1000).toFixed(2),
+	},
+	// {
+	// 	key: 'last_billing_date',
+	// 	title: 'Last Billing Date',
+	// 	render: (value) => value && captureTimeFormat(value),
+	// },
+	{
+		field: 'cumulative_programming_count',
+		headerName: 'Cumulative programming count',
+		width: 230,
+		hide: 'true',
+		// key: 'cumulative_programming_count', 
+		// title: 'Cumulative Programming Count'
+	},
+	// {key: 'cumulative_power_on_duration', title: 'Cumulative power on duration'},
+	// {key: 'UtilityId', title: 'Utility id'},
+]

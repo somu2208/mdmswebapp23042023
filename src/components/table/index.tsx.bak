@@ -1,0 +1,71 @@
+import {Box, CircularProgress} from '@mui/material'
+import _ from 'lodash'
+import {useState} from 'react'
+import {StyledTable} from './styles'
+import { SystemStyleObject } from '@mui/system'
+import { DataGrid, GridToolbar } from '@mui/x-data-grid';
+
+interface TableProps {
+	columns: any[]
+	tableData: any[]
+	loading: boolean
+	sx?: SystemStyleObject
+	onRowClick?: (v: any) => void
+	pagination?: {
+		totalCount: number
+		pageCount: number
+		onChange: (v: number) => void
+	}
+	actions?: any
+}
+
+function Table(props: TableProps){
+	const {
+		columns,
+		tableData,
+		loading = false,
+		sx,
+		onRowClick,
+		pagination,
+		actions,
+	}= props
+	const [page, setPage] = useState(1)
+
+	const handleRowClick = (item: any) => {
+		if (!onRowClick) return
+		onRowClick(item)
+	}
+
+	if (loading && !tableData)
+		return (
+			<div className='flex items-center justify-center w-full h-full'>
+				<CircularProgress />
+			</div>
+		)
+
+	const data = {
+		columns: columns,
+		rows: tableData,
+		initialState: {}
+	}
+
+	return (
+		<>
+			<div style={{ height: 700, width: '100%' }}>
+				<DataGrid
+					rows={data.rows}
+					columns={data.columns}
+					getRowId={(row) => row.source_timestamp}
+					components={{
+						Toolbar: GridToolbar,
+					}}
+					initialState={{
+						...data.initialState,						
+					}}
+				/>
+			</div>
+		</>
+	)
+}
+
+export default Table

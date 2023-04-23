@@ -1,0 +1,1615 @@
+import {
+	add,
+	compareAsc,
+	format,
+	formatISO,
+	getDaysInMonth,
+	parse,
+	parseISO,
+	set,
+	sub,
+} from 'date-fns'
+import http from '../http'
+import {
+	fetchLatestDateTimeForDailyLoadSync,
+	fetchLatestDateTimeForDataSync,
+	fetchLatestDateTimeForDataSyncForMeters,
+} from './time-labels'
+import {access_token, utilityId} from '../http'
+import {add5Hr30Min} from 'utils'
+import _ from 'lodash'
+
+// dashboard metrics
+export const fetchTotalSurveyed = () => {
+	return http.get('/items/surveys', {
+		params: {
+			filter: {status: {_eq: 'Approved'}},
+			'aggregate[count]': 'survey_id',
+			access_token,
+		},
+	})
+}
+export const fetchTotalDeployedMeters = () => {
+	return http.get('/items/meters', {
+		params: {
+			'groupBy[]': 'meter_connection_type',
+			'aggregate[count]': 'meter_serial_number',
+			access_token,
+			filter: {utility_id: {_eq: utilityId}},
+		},
+	})
+}
+
+export const fetchTotalInstalledMeters = () => {
+	return http.get('/items/meters', {
+		params: {
+			filter: {
+				_and: [
+					{meter_status: {_eq: 'Active'}},
+					{installation_date: {_neq: null}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'groupBy[]': 'meter_connection_type',
+			'aggregate[count]': 'meter_serial_number',
+			access_token,
+		},
+	})
+}
+
+export const fetchTotalActiveMeters = () => {
+	const date = new Date()
+	const todayFrom = format(
+		set(date, {hours: 0, minutes: 0, seconds: 0}),
+		'yyyy-MM-dd HH:mm:ss'
+	)
+	const todayTo = format(
+		set(date, {hours: 23, minutes: 59, seconds: 0}),
+		'yyyy-MM-dd HH:mm:ss'
+	)
+	return http.get('/items/meters', {
+		params: {
+			filter: {
+				_and: [
+					{latest_sync_date: {_gt: '$NOW(-24 hours)'}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'groupBy[]': 'meter_connection_type',
+			'aggregate[count]': 'meter_serial_number',
+			access_token,
+		},
+	})
+}
+
+export const fetchTotalMeterCount = () => {
+	return http.get('/items/total_4g_meters', {
+		params: {
+			filter: {date_updated: {_gt: '$NOW(-24 hours)'}},
+			'groupBy[]': 'phase_id_new',
+			'aggregate[count]': 'meter_serial_number',
+			access_token,
+		},
+	})
+}
+
+//Power consumption KPI
+
+export const fetchPowerConsumptionMonthSingle = async() => {
+	
+	const date = new Date()
+	const startDate = format(set(date, {date: 1}), 'yyyy-MM-dd 00:00:00')
+	const endDate = format(date, 'yyyy-MM-dd 23:59:00')	
+	
+	const res = http.get('/items/meter_dailyload_profile_single_phase', {
+		params: {
+			filter: {
+				_and: [
+					{source_timestamp: {_between:[startDate, endDate]}},
+					{utility_id: {_eq: utilityId}},
+				]
+			},
+			'aggregate[sum]': 'energy_kwh_import',
+			access_token,
+		},
+	})
+	
+	return res
+}
+
+export const fetchPowerConsumptionMonthThree = async() => {
+	
+	const date = new Date()
+	const startDate = format(set(date, {date: 1}), 'yyyy-MM-dd 00:00:00')
+	const endDate = format(date, 'yyyy-MM-dd 23:59:00')	
+	
+	const res = http.get('/items/meter_dailyload_profile_three_phase', {
+		params: {
+			filter: {
+				_and: [
+					{source_timestamp: {_between:[startDate, endDate]}},
+					{utility_id: {_eq: utilityId}},
+				]
+			},
+			'aggregate[sum]': 'energy_wh_import',
+			access_token,
+		},
+	})
+	
+	return res
+}
+
+
+export const fetchDisconnectedMeters = () => {
+	return http.get('/items/meters', {
+		params: {
+			filter: {
+				_and: [
+					{decommissioning_date: {_neq: null}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'groupBy[]': 'meter_connection_type',
+			'aggregate[count]': 'meter_serial_number',
+			access_token,
+		},
+	})
+}
+
+export const fetchMtd = () => {
+	const date = new Date()
+	const startDate = format(set(date, {date: 1}), 'yyyy-MM-dd')
+	const endDate = format(date, 'yyyy-MM-dd')
+
+	return http.get('/items/meter_daily_load_data', {
+		params: {
+			filter: {
+				date: {
+					_between: [startDate, endDate],
+				},
+				utility_id: {_eq: utilityId},
+			},
+			'groupBy[]': 'meter_connection_type_id',
+			'aggregate[sum]': 'energy_wh_import',
+			access_token,
+		},
+	})
+}
+
+export const fetchYtd = async () => {
+	const year = new Date().getFullYear()
+	const firstDayOfTheYear = format(new Date(year as number, 0, 1), 'yyyy-MM-dd')
+	const lastDayOfTheYear = format(
+		new Date(year as number, 11, 31),
+		'yyyy-MM-dd'
+	)
+
+	return await http.get('/items/meter_daily_load_data', {
+		params: {
+			filter: {
+				_and: [
+					{date: {_between: [firstDayOfTheYear, lastDayOfTheYear]}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'aggregate[sum]': 'energy_wh_import',
+			'groupBy[]': 'meter_connection_type_id',
+			access_token,
+		},
+	})
+}
+
+// graphs data
+export const fetchLast30DaysActiveMeters = () => {
+	return http.get('/items/meters_data_sync', {
+		params: {
+			filter: {
+				_and: [{date: {_gt: '$NOW(-30 days)'}}, {utility_id: {_eq: utilityId}}],
+			},
+			sort: 'date',
+			'groupBy[]': 'meter_connection_type_id,date',
+			'aggregate[countDistinct]': 'meter_serial_number',
+			access_token,
+		},
+	})
+}
+
+export const fetchLast30DaysActiveMetersSingle = () => {
+	return http.get('/items/meter_dailyload_profile_single_phase', {
+		params: {
+			filter: {
+				_and: [{source_timestamp: {_gt: '$NOW(-30 days)'}}, {utility_id: {_eq: utilityId}}],
+			},
+			'groupBy[]': 'source_date',
+			'aggregate[countDistinct]': 'meter_serial_number',
+			access_token,
+		},
+	})
+}
+
+export const fetchLast30DaysActiveMetersThird = () => {
+	return http.get('/items/meter_dailyload_profile_three_phase', {
+		params: {
+			filter: {
+				_and: [{source_timestamp: {_gt: '$NOW(-30 days)'}}, {utility_id: {_eq: utilityId}}],
+			},
+			'groupBy[]': 'source_date',
+			'aggregate[countDistinct]': 'meter_serial_number',
+			access_token,
+		},
+	})
+}
+
+
+//All Phase Daily Load Data
+export const fetchTodaysDataSyncDailyLoad = async () => {
+	const date = new Date()
+	const now = format(date, 'yyyy-MM-dd HH:mm:ss')
+	const minus24Hours = format(sub(date, {hours: 24}), 'yyyy-MM-dd HH:mm:ss')
+
+	const res = await http.get('/items/meters_data_sync', {
+		params: {
+			filter: {
+				_and: [
+					{date: {_between: [minus24Hours, now]}},
+					{function_id: {_in: '3'}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'groupBy[]':
+				'day(server_date_time),month(server_date_time),year(server_date_time),hour(server_date_time),minute(server_date_time),source_date_time',
+			'aggregate[countDistinct]': 'meter_serial_number',
+			sort: '-hour(source_date_time)',
+			limit: -1,
+			access_token,
+		},
+	})
+
+	const grouped = res?.data?.data?.map((item) => ({
+		timeStamp: format(
+			new Date(
+				item?.server_date_time_year,
+				item?.server_date_time_month - 1,
+				item?.server_date_time_day,
+				item?.server_date_time_hour,
+				item?.server_date_time_minute
+			),
+			'yyyy-MM-dd HH:mm:ss'
+		),
+		value: item?.countDistinct.meter_serial_number,
+	}))
+
+	const sum = grouped?.reduce((acc, item) => {
+		return acc + item.value
+	}, 0)
+
+	return {
+		value: sum,
+		timeStamp: grouped[0].timeStamp,
+	}
+}
+
+
+
+// Single phase Daily Load Chart Data
+export const fetchTodaysDataSyncDailyLoadSingle = async () => {
+	const res = await http.get('/items/meter_dailyload_profile_single_phase', {
+		params: {
+			filter: {
+				_and: [
+					{server_timestamp: {_gt: "$NOW(-30 days)"}},
+					{utility_id: {_eq: "3"}}
+				]},
+
+			'groupBy[]':
+				'hour(server_timestamp),minute(server_timestamp)',
+				'aggregate[countDistinct]':'meter_serial_number',
+
+			sort:'-hour(server_timestamp)',
+			limit: -1,
+			access_token,
+		},
+	})
+
+	const grouped = res?.data?.data?.map((item) => ({
+		server_timestamp: format(
+			new Date(
+				// item?.server_date_time_year,
+				// item?.server_date_time_month - 1,
+				// item?.server_date_time_day,
+				item?.server_timestamp_hour,
+				item?.server_timestamp_minute
+			),
+			'HH:mm:ss a'
+		),
+		value: item?.countDistinct.meter_serial_number,
+	}))
+
+	// console.log("grouped Daily Load Single Phase Data: ",grouped)
+
+	const sum = grouped?.reduce((acc, item) => {
+		return acc + item.value
+	}, 0)
+	// console.log("grouped Daily Load Single Phase Data Sum: ",sum)
+
+	return {
+		value: sum,
+		server_timestamp: grouped[0].server_timestamp,
+	}
+}
+
+
+// Three phase Daily Load Chart Data
+export const fetchTodaysDataSyncDailyLoadThree = async () => {
+	const res = await http.get('/items/meter_dailyload_profile_three_phase', {
+		params: {
+
+			filter: {
+				_and: [
+					{server_timestamp:{_gt:"$NOW(-30 days)"}},
+					{utility_id:{_eq:"3"}}
+				]},
+
+			'groupBy[]':
+				'hour(server_timestamp),minute(server_timestamp)',
+				'aggregate[countDistinct]':'meter_serial_number',
+
+			sort: '-hour(server_timestamp)',
+			limit: -1,
+			access_token,
+		},
+	})
+
+	const grouped = res?.data?.data?.map((item) => ({
+		server_timestamp: format(
+			new Date(
+				// item?.server_date_time_year,
+				// item?.server_date_time_month - 1,
+				// item?.server_date_time_day,
+				item?.server_timestamp_hour,
+				item?.server_timestamp_minute
+			),
+			'HH:mm:ss a'
+		),
+		value: item?.countDistinct.meter_serial_number,
+	}))
+
+	// console.log("grouped Daily Load Three Phase Data: ",grouped)
+
+	const sum = grouped?.reduce((acc, item) => {
+		return acc + item.value
+	}, 0)
+	// console.log("grouped Daily Load Three Phase Data Sum: ",sum)
+
+	return {
+		value: sum,
+		server_timestamp: grouped[0].server_timestamp,
+	}
+}
+
+
+// All Block Load Chart
+export const fetchTodaysDataSyncBlockLoad = async () => {
+	const date = new Date()
+	const now = format(date, 'yyyy-MM-dd HH:mm:ss').replace(' ', 'T')
+	const minus24Hours = format(
+		sub(date, {hours: 24}),
+		'yyyy-MM-dd HH:mm:ss'
+	).replace(' ', 'T')
+
+	const res = await http.get('/items/meters_data_sync', {
+		params: {
+			filter: {
+				_and: [
+					{date: {_between: [minus24Hours, now]}},
+					{function_id: {_in: '2'}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'groupBy[]':
+				'hour(server_date_time),minute(server_date_time),day(server_date_time),month(server_date_time),year(server_date_time),source_date_time',
+			'aggregate[countDistinct]': 'meter_serial_number',
+			sort: '-hour(source_date_time)',
+			limit: -1,
+			access_token,
+		},
+	})
+
+	const grouped = _.groupBy(
+		res?.data?.data
+			?.filter(
+				(item) =>
+					item.server_date_time_minute === 0 ||
+					item.server_date_time_minute === 30
+			)
+			?.map((item) => ({
+				timeStamp: format(
+					new Date(
+						item?.server_date_time_year,
+						item?.server_date_time_month - 1,
+						item?.server_date_time_day,
+						item?.server_date_time_hour,
+						item?.server_date_time_minute
+					),
+					'dd-MM hh:mm:a'
+				),
+				value: item?.countDistinct.meter_serial_number,
+			})),
+		'timeStamp'
+	)
+	const chartData = Object.entries(grouped).map(([key, value]: [any, any]) => ({
+		timeStamp: key,
+		value: value.reduce((acc, curr) => acc + curr.value, 0),
+	}))
+
+	return chartData
+}
+
+
+// Single Phase Block Load Chart
+export const fetchTodaysDataSyncBlockLoadSingle = async () => {
+	const res = await http.get('/items/meter_block_load_profile_single_phase', {
+		params: {
+			filter: {
+				_and: [
+					{server_timestamp: {_gt: '$NOW(-24 hours)'}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'groupBy[]': 'hour(server_timestamp),minute(server_timestamp)',
+			'aggregate[countDistinct]': 'meter_serial_number',
+			sort: '-hour(server_timestamp)',
+			limit: -1,
+			access_token,
+		},
+	})
+
+	const xaxisNumbers = new Array(24)
+		.fill(0)
+		.map((_, index) => {
+			return [0, 30].map((minute) => `${index}:${minute}`)
+		})
+		.flat()
+
+	const chartDataHourly = res?.data?.data?.filter(
+		(item) =>
+			item.server_timestamp_minute === 0 || item.server_timestamp_minute === 30
+	)
+
+	const data = xaxisNumbers
+		.map((num) => {
+			const res = chartDataHourly.find(
+				(item) =>
+					`${item.server_timestamp_hour}:${item.server_timestamp_minute}` ===
+					num
+			)
+			return res
+				? res
+				: {
+					server_timestamp_hour: num.split(':')[0],
+					server_timestamp_minute: num.split(':')[1],
+					countDistinct: {
+						meter_serial_number: 0,
+					},
+				  }
+		})
+		.map((item) => item?.countDistinct.meter_serial_number)
+
+		const xAxis = new Array(24)
+			.fill(0)
+			.map((_, i) => i)
+			.map((item) => {
+				const date = format(
+					sub(new Date(), {hours: item}) as any,
+					'dd-MM hh:mm:a'
+				)
+				return date
+			})
+
+		return {
+			x: xAxis,
+			y: data,
+		}
+}
+
+
+// Three Phase Block Load Chart
+export const fetchTodaysDataSyncBlockLoadThree = async () => {
+	const res = await http.get('/items/meter_block_load_profile_three_phase', {
+		params: {
+			filter: {
+				_and: [
+					{server_timestamp: {_gt: '$NOW(-24 hours)'}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'groupBy[]': 'hour(server_timestamp),minute(server_timestamp)',
+			'aggregate[countDistinct]': 'meter_serial_number',
+			sort: '-hour(server_timestamp)',
+			limit: -1,
+			access_token,
+		},
+	})
+
+	const xaxisNumbers = new Array(24)
+		.fill(0)
+		.map((_, index) => {
+			return [0, 15, 30, 45].map((minute) => `${index}:${minute}`)
+		})
+		.flat()
+
+	const chartDataHourly = res?.data?.data?.filter(
+		(item) =>
+			item.server_timestamp_minute === 0 ||
+			item.server_timestamp_minute === 15 ||
+			item.server_timestamp_minute === 30 ||
+			item.server_timestamp_minute === 45
+	)
+
+	const data = xaxisNumbers
+		.map((num) => {
+			const res = chartDataHourly.find(
+				(item) =>
+					`${item.server_timestamp_hour}:${item.server_timestamp_minute}` ===
+					num
+			)
+			return res
+				? res
+				: {
+						server_timestamp_hour: num.split(':')[0],
+						server_timestamp_minute: num.split(':')[1],
+						countDistinct: {
+							meter_serial_number: 0,
+						},
+				  }
+		})
+		.map((item) => item?.countDistinct.meter_serial_number)
+		console.log("dghfgdhfgshd",data)
+
+	return {
+		x: new Array(24)
+			.fill(0)
+			.map((_, i) => i)
+			.map((item) => {
+				const date = format(
+					sub(new Date(), {hours: item}) as any,
+					'dd-MM hh:mm:a'
+				)
+				return date
+			}),
+		y: data,
+	}
+}
+
+
+// All Phase Instantaneous chart Data
+export const fetchTodaysDataSyncInstant = async () => {
+	const res = await http.get('/items/meters_data_sync', {
+		params: {
+			filter: {
+				_and: [
+					{date: {_gt: '$NOW(-24 hours)'}},
+					{function_id: {_in: ['1']}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'groupBy[]':
+				'day(server_date_time),month(server_date_time),year(server_date_time),hour(server_date_time),minute(server_date_time),source_date_time',
+			'aggregate[countDistinct]': 'meter_serial_number',
+			sort: '-server_date_time',
+			limit: -1,
+			access_token,
+		},
+	})
+
+	const grouped = _.groupBy(
+		res?.data?.data
+			?.filter(
+				(item) =>
+					item.server_date_time_minute === 0 ||
+					item.server_date_time_minute === 15 ||
+					item.server_date_time_minute === 30 ||
+					item.server_date_time_minute === 45
+			)
+			?.map((item) => ({
+				timeStamp: format(
+					new Date(
+						item?.server_date_time_year,
+						item?.server_date_time_month - 1,
+						item?.server_date_time_day,
+						item?.server_date_time_hour,
+						item?.server_date_time_minute
+					),
+					'dd-MM hh:mm:a'
+				),
+				value: item?.countDistinct.meter_serial_number,
+			})),
+		'timeStamp'
+	)
+	const chartData = Object.entries(grouped).map(([key, value]: [any, any]) => ({
+		timeStamp: key,
+		value: value.reduce((acc, curr) => acc + curr.value, 0),
+	}))
+
+	return chartData
+}
+
+
+//Single Phase Instatntaneous Chart Data
+export const fetchTodaysDataSyncInstantSingle = async () => {
+	const res = await http.get('/items/meter_instantaneous_profile_single_phase', {
+		params: {
+			filter: {
+				_and: [
+					{server_timestamp: {_gt: '$NOW(-24 hours)'}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'groupBy[]': 'hour(server_timestamp),minute(server_timestamp)',
+			'aggregate[countDistinct]': 'meter_serial_number',
+			sort: '-hour(server_timestamp)',
+			limit: -1,
+			access_token,
+		},
+	})
+
+	const xaxisNumbers = new Array(24)
+		.fill(0)
+		.map((_, index) => {
+			return [0, 15, 30, 45].map((minute) => `${index}:${minute}`)
+		})
+		.flat()
+
+	const chartDataHourly = res?.data?.data?.filter(
+		(item) =>
+			item.server_timestamp_minute === 0 ||
+			item.server_timestamp_minute === 15 ||
+			item.server_timestamp_minute === 30 ||
+			item.server_timestamp_minute === 45
+	)
+
+	const data = xaxisNumbers
+		.map((num) => {
+			const res = chartDataHourly.find(
+				(item) =>
+					`${item.server_timestamp_hour}:${item.server_timestamp_minute}` ===
+					num
+			)
+			return res
+				? res
+				: {
+						server_timestamp_hour: num.split(':')[0],
+						server_timestamp_minute: num.split(':')[1],
+						countDistinct: {
+							meter_serial_number: 0,
+						},
+				  }
+		})
+		.map((item) => item?.countDistinct.meter_serial_number)
+
+	return {
+		x: new Array(24)
+			.fill(0)
+			.map((_, i) => i)
+			.map((item) => {
+				const date = format(
+					sub(new Date(), {hours: item}) as any,
+					'dd-MM hh:mm:a'
+				)
+				return date
+			}),
+		y: data,
+	}
+}
+
+
+//Three Phase Instatntaneous Chart Data
+export const fetchTodaysDataSyncInstantThree = async () => {
+	const res = await http.get('/items/meter_instantaneous_profile_three_phase', {
+		params: {
+			filter: {
+				_and: [
+					{server_timestamp: {_gt: '$NOW(-24 hours)'}},
+					{utilityid: {_eq: utilityId}},
+				],
+			},
+			'groupBy[]': 'hour(server_timestamp),minute(server_timestamp)',
+			'aggregate[countDistinct]': 'meter_serial_number',
+			sort: '-hour(server_timestamp)',
+			limit: -1,
+			access_token,
+		},
+	})
+
+	const xaxisNumbers = new Array(24)
+		.fill(0)
+		.map((_, index) => {
+			return [0, 15, 30, 45].map((minute) => `${index}:${minute}`)
+		})
+		.flat()
+
+	const chartDataHourly = res?.data?.data?.filter(
+		(item) =>
+			item.server_timestamp_minute === 0 ||
+			item.server_timestamp_minute === 15 ||
+			item.server_timestamp_minute === 30 ||
+			item.server_timestamp_minute === 45
+	)
+
+	const data = xaxisNumbers
+		.map((num) => {
+			const res = chartDataHourly.find(
+				(item) =>
+					`${item.server_timestamp_hour}:${item.server_timestamp_minute}` ===
+					num
+			)
+			return res
+				? res
+				: {
+						server_timestamp_hour: num.split(':')[0],
+						server_timestamp_minute: num.split(':')[1],
+						countDistinct: {
+							meter_serial_number: 0,
+						},
+				  }
+		})
+		.map((item) => item?.countDistinct.meter_serial_number)
+
+	return {
+		x: new Array(24)
+			.fill(0)
+			.map((_, i) => i)
+			.map((item) => {
+				const date = format(
+					sub(new Date(), {hours: item}) as any,
+					'dd-MM hh:mm:a'
+				)
+				return date
+			}),
+		y: data,
+	}
+}
+
+
+
+//All phase data
+export const fetchPower24 = async () => {
+	const res = await http.get('/items/daywise_meter_data', {
+		params: {
+			filter: {
+				_and: [
+					{source_timestamp: {_gt: '$NOW(-24 hours)'}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'groupBy[]': 'hour(source_timestamp),source_timestamp',
+			'aggregate[sum]': 'KWh',
+			limit: -1,
+			access_token,
+		},
+	})
+
+	const groupedData: any[] = Object.values(
+		_.groupBy(res.data.data, 'source_timestamp_hour')
+	)
+
+	const values = groupedData?.map((item) => ({
+		value: item.reduce((acc, curr) => acc + curr.sum.KWh, 0),
+		timestamp: item[item.length - 1]?.source_timestamp,
+	}))
+
+	return groupedData
+		?.map(
+			(item: any) => new Date(parseISO(item[item.length - 1]?.source_timestamp))
+		)
+		.sort(compareAsc)
+		.map((item) => formatISO(item).slice(0, -6))
+		?.map((item) => {
+			const timeValue = add5Hr30Min(item)
+			return {
+				value: values?.find((value) => value.timestamp === item)?.value,
+				timestamp:
+					timeValue.slice(0, 5) +
+						' ' +
+						timeValue.slice(10, -6) +
+						':00:' +
+						timeValue.slice(-2) ?? '00',
+			}
+		})
+		.reverse()
+}
+
+// Single pahse
+
+export const fetchPower24single = async () => {
+	const res = await http.get('/items/meter_block_load_profile_single_phase', {
+		params: {
+			filter: {
+				_and: [
+					{source_timestamp: {_gt: '$NOW(-24 hours)'}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'sort':'-hour(source_timestamp)',
+			'groupBy[]': 'hour(source_timestamp),source_timestamp',
+			'aggregate[sum]': 'block_energy_kWh_import',
+			limit: -1,
+			access_token,
+		},
+	})
+
+	const groupedData: any[] = Object.values(
+		_.groupBy(res.data.data, 'source_timestamp_hour')
+	)
+
+	const values = groupedData?.map((item) => ({
+		value: item.reduce((acc, curr) => acc + curr.sum.block_energy_kWh_import, 0),
+		timestamp: item[item.length - 1]?.source_timestamp,
+	}))
+
+	return groupedData
+		?.map(
+			(item: any) => new Date(parseISO(item[item.length - 1]?.source_timestamp))
+		)
+		.sort(compareAsc)
+		.map((item) => formatISO(item).slice(0, -6))
+		?.map((item) => {
+			const timeValue = add5Hr30Min(item)
+			return {
+				value: values?.find((value) => value.timestamp === item)?.value,
+				timestamp:
+					timeValue.slice(0, 5) +
+						' ' +
+						timeValue.slice(10, -6) +
+						':00:' +
+						timeValue.slice(-2) ?? '00',
+			}
+		})
+		.reverse()
+}
+
+// Third phase
+
+export const fetchPower24third = async () => {
+	const res = await http.get('/items/meter_block_load_profile_three_phase', {
+		params: {
+			filter: {
+				_and: [
+					{source_timestamp: {_gt: '$NOW(-24 hours)'}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'sort':'-hour(source_timestamp)',
+			'groupBy[]': 'hour(source_timestamp),source_timestamp',
+			'aggregate[sum]': 'block_energy_Wh_import',
+			limit: -1,
+			access_token,
+		},
+	})
+
+	const groupedData: any[] = Object.values(
+		_.groupBy(res.data.data, 'source_timestamp_hour')
+	)
+
+	const values = groupedData?.map((item) => ({
+		value: item.reduce((acc, curr) => acc + curr.sum.block_energy_Wh_import, 0),
+		timestamp: item[item.length - 1]?.source_timestamp,
+	}))
+
+	return groupedData
+		?.map(
+			(item: any) => new Date(parseISO(item[item.length - 1]?.source_timestamp))
+		)
+		.sort(compareAsc)
+		.map((item) => formatISO(item).slice(0, -6))
+		?.map((item) => {
+			const timeValue = add5Hr30Min(item)
+			return {
+				value: values?.find((value) => value.timestamp === item)?.value,
+				timestamp:
+					timeValue.slice(0, 5) +
+						' ' +
+						timeValue.slice(10, -6) +
+						':00:' +
+						timeValue.slice(-2) ?? '00',
+			}
+		})
+		.reverse()
+}
+
+
+export const fetchPowerConsumptionOfADay = async ({
+	date,
+	range,
+}: {
+	date?: any
+	range: boolean
+}) => {
+	const addOneDay = add(new Date(date), {days: 1})
+	const todayFrom = format(
+		set(new Date(addOneDay), {hours: 0, minutes: 0, seconds: 0}),
+		'yyyy-MM-dd HH:mm:ss'
+	)
+	const todayTo = format(
+		set(new Date(addOneDay), {hours: 23, minutes: 59, seconds: 0}),
+		'yyyy-MM-dd HH:mm:ss'
+	)
+
+	if (range) {
+		const res = await http.get('/items/meter_daily_load_data', {
+			params: {
+				filter: {
+					_and: [
+						{source_timestamp: {_between: [todayFrom, todayTo]}},
+						{utility_id: {_eq: utilityId}},
+					],
+				},
+				'aggregate[sum]': 'energy_wh_import',
+				'groupBy[]': 'date',
+				sort: '-date',
+				access_token,
+			},
+		})
+
+		return {
+			data: res.data.data?.reduce(
+				(acc, curr) => acc + curr.sum?.energy_wh_import,
+				0
+			),
+		}
+	}
+
+	const res = await http.get('/items/daywise_meter_data', {
+		params: {
+			filter: {
+				_and: [{date_consumption: {_eq: date}}, {utility_id: {_eq: utilityId}}],
+			},
+			'aggregate[sum]': 'KWh',
+			access_token,
+		},
+	})
+	return {
+		data: res.data.data[0]?.sum.KWh,
+	}
+}
+//SINGLE PHASE
+export const fetchPowerConsumptionOfADaySingle = async ({
+	date,
+	range,
+}: {
+	date?: any
+	range: boolean
+}) => {
+	const addOneDay = add(new Date(date), {days: 0})
+	const todayFrom = format(
+		set(new Date(addOneDay), {hours: 0, minutes: 0, seconds: 0}),
+		'yyyy-MM-dd HH:mm:ss'
+	)
+	const todayTo = format(
+		set(new Date(addOneDay), {hours: 23, minutes: 59, seconds: 0}),
+		'yyyy-MM-dd HH:mm:ss'
+	)
+
+	if (range) {
+		const res = await http.get('/items/meter_dailyload_profile_single_phase', {
+			params: {
+				filter: {
+					_and: [
+						{source_timestamp: {_between: [todayFrom, todayTo]}},
+						{utility_id: {_eq: utilityId}},
+					],
+				},
+				'aggregate[sum]': 'energy_kwh_import',
+				access_token,
+			},
+		})
+
+		return {
+			data: res.data.data?.reduce(
+				(acc, curr) => acc + curr.sum?.energy_kwh_import,
+				0
+			),
+		}
+	}
+
+	const res = await http.get('/items/meter_block_load_profile_single_phase', {
+		params: {
+			filter: {
+				_and: [
+					{source_timestamp: {_between: [todayFrom, todayTo]}}, 
+					{utility_id: {_eq: utilityId}}
+				],
+			},
+			'aggregate[sum]': 'block_energy_kWh_import',
+			access_token,
+		},
+	})
+	return {
+		data: res.data.data[0]?.sum.block_energy_kWh_import,
+	}
+}
+
+//THIRD PHASE
+export const fetchPowerConsumptionOfADayThird = async ({
+	date,
+	range,
+}: {
+	date?: any
+	range: boolean
+}) => {
+	const addOneDay = add(new Date(date), {days: 0})
+	const todayFrom = format(
+		set(new Date(addOneDay), {hours: 0, minutes: 0, seconds: 0}),
+		'yyyy-MM-dd HH:mm:ss'
+	)
+	const todayTo = format(
+		set(new Date(addOneDay), {hours: 23, minutes: 59, seconds: 0}),
+		'yyyy-MM-dd HH:mm:ss'
+	)
+
+	if (range) {
+		const res = await http.get('/items/meter_dailyload_profile_three_phase', {
+			params: {
+				filter: {
+					_and: [
+						{source_timestamp: {_between: [todayFrom, todayTo]}},
+						{utility_id: {_eq: utilityId}},
+					],
+				},
+				'aggregate[sum]': 'energy_wh_import',
+				access_token,
+			},
+		})
+		
+		//return res
+		
+		return {
+			data: res.data.data?.reduce(
+				(acc, curr) => acc + curr.sum?.energy_wh_import,
+				0
+			),
+		}
+	}
+
+	const res = await http.get('/items/meter_block_load_profile_three_phase', {
+		params: {
+			filter: {
+				_and: [
+					{source_timestamp: {_between: [todayFrom, todayTo]}}, 
+					{utility_id: {_eq: utilityId}}
+				],
+			},
+			'aggregate[sum]': 'block_energy_Wh_import',
+			access_token,
+		},
+	})
+	return {
+		data: res.data.data[0]?.sum.block_energy_Wh_import,
+	}
+}
+
+
+export const fetchLatestTimeForPowerConsumption = async () => {
+	return http.get('/items/daywise_meter_data', {
+		params: {
+			sort: '-server_timestamp',
+			limit: 1,
+			fields: 'server_timestamp',
+			access_token,
+		},
+	})
+}
+
+export const fetchLatestTimeForPowerConsumptionSingle = async () => {
+	
+	const res = await http.get('/items/meter_block_load_profile_single_phase', {
+		params: {
+			sort: '-server_timestamp',
+			limit: 1,
+			fields: 'server_timestamp',
+			access_token,
+		},
+	})
+	const date = res?.data?.data[0]?.server_timestamp
+	const addedDate = add(new Date(date), {
+		hours: 5,
+		minutes: 30,
+	})
+	return format(addedDate, 'dd/MM/yyyy HH:mm:ss')
+}
+
+export const fetchLatestTimeForPowerConsumptionThird = async () => {
+	
+	const res = await http.get('/items/meter_dailyload_profile_three_phase', {
+		params: {
+			sort: '-server_timestamp',
+			limit: 1,
+			fields: 'server_timestamp',
+			access_token,
+		},
+	})
+	const date = res?.data?.data[0]?.server_timestamp
+	const addedDate = add(new Date(date), {
+		hours: 5,
+		minutes: 30,
+	})
+	return format(addedDate, 'dd/MM/yyyy HH:mm:ss')
+}
+
+
+//All Phase
+export const fetchPowerConsumptionOf30Days = async () => {
+	return http.get('/items/meter_daily_load_data', {
+		params: {
+			filter: {
+				_and: [{date: {_gt: '$NOW(-30 days)'}}, {utility_id: {_eq: utilityId}}],
+			},
+			'aggregate[sum]': 'energy_wh_import',
+			access_token,
+			'groupBy[]': 'date',
+		},
+	})
+}
+//Single Phase
+
+export const fetchPowerConsumptionOf30DaysSingleTimeStamp = async () => {
+	const res = await http.get('/items/meter_dailyload_profile_single_phase', {
+		params: {
+			sort: '-server_timestamp',
+			limit: 1,
+			fields: 'server_timestamp',
+			access_token,
+		},
+	})
+	const date = res?.data?.data[0]?.server_timestamp
+	const addedDate = add(new Date(date), {
+		hours: 5,
+		minutes: 30,
+	})
+	return format(addedDate, 'dd/MM/yyyy HH:mm:ss')		 
+}
+
+export const fetchPowerConsumptionOf30DaysSingle = async () => {
+	return http.get('/items/meter_dailyload_profile_single_phase', {
+		params: {
+			filter: {
+				_and: [{source_timestamp: {_gt: '$NOW(-30 days)'}}, {utility_id: {_eq: utilityId}}],
+			},
+			'aggregate[sum]': 'energy_kwh_import',
+			access_token,
+			'groupBy[]': 'day(source_timestamp),source_date',
+			'sort': 'source_timestamp',
+		},
+	})
+}
+//Third Phase
+export const fetchPowerConsumptionOf30DaysThird = async () => {
+	return http.get('/items/meter_dailyload_profile_three_phase', {
+		params: {
+			filter: {
+				_and: [{source_timestamp: {_gt: '$NOW(-30 days)'}}, {utility_id: {_eq: utilityId}}],
+			},
+			'aggregate[sum]': 'energy_wh_import',
+			access_token,
+			'groupBy[]': 'day(source_timestamp),source_date',
+			'sort': 'source_timestamp',
+		},
+	})
+}
+
+export const fetchPowerConsumptionByYear = async ({
+	year,
+}: {
+	year: string | number
+}) => {
+	const firstDayOfTheYear = format(new Date(year as number, 0, 1), 'yyyy-MM-dd')
+	const lastDayOfTheYear = format(
+		new Date(year as number, 11, 31),
+		'yyyy-MM-dd'
+	)
+
+	const res = await http.get('/items/meter_daily_load_data', {
+		params: {
+			filter: {
+				_and: [
+					{date: {_between: [firstDayOfTheYear, lastDayOfTheYear]}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'aggregate[sum]': 'energy_wh_import',
+			access_token,
+			'groupBy[]': 'month(date)',
+		},
+	})
+	return res
+}
+export const fetchLatestTimeForPowerConsumptionMonthlyAndYearly = async () => {
+	const res = await http.get('/items/meter_daily_load_data', {
+		params: {
+			sort: '-server_timestamp',
+			limit: 1,
+			fields: 'server_timestamp',
+			access_token,
+			filter: {utility_id: {_eq: utilityId}},
+		},
+	})
+
+	const date = res?.data?.data[0]?.server_timestamp
+	const addedDate = add(new Date(date), {
+		hours: 5,
+		minutes: 30,
+	})
+	return format(addedDate, 'dd/MM/yyyy HH:mm:ss')
+}
+
+//Single Phase
+
+export const fetchPowerConsumptionByYearSingle = async ({
+	year,
+}: {
+	year: string | number
+}) => {
+	const firstDayOfTheYear = format(new Date(year as number, 0, 1), 'yyyy-MM-dd')
+	const lastDayOfTheYear = format(
+		new Date(year as number, 11, 31),
+		'yyyy-MM-dd'
+	)
+
+	const res = await http.get('/items/meter_dailyload_profile_single_phase', {
+		params: {
+			filter: {
+				_and: [
+					{source_timestamp: {_between: [firstDayOfTheYear, lastDayOfTheYear]}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'aggregate[sum]': 'energy_kwh_import',
+			access_token,
+			'groupBy[]': 'month(source_timestamp)',
+			'sort': '-month(source_timestamp)'
+		},
+	})
+	return res
+}
+
+//Single Phase
+
+export const fetchPowerConsumptionByYearThird = async ({
+	year,
+}: {
+	year: string | number
+}) => {
+	const firstDayOfTheYear = format(new Date(year as number, 0, 1), 'yyyy-MM-dd')
+	const lastDayOfTheYear = format(
+		new Date(year as number, 11, 31),
+		'yyyy-MM-dd'
+	)
+
+	const res = await http.get('/items/meter_dailyload_profile_three_phase', {
+		params: {
+			filter: {
+				_and: [
+					{source_timestamp: {_between: [firstDayOfTheYear, lastDayOfTheYear]}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'aggregate[sum]': 'energy_wh_import',
+			access_token,
+			'groupBy[]': 'month(source_timestamp)',
+			'sort': '-month(source_timestamp)'
+		},
+	})
+	return res
+}
+
+
+export const fetchLatestTimeForPowerConsumptionMonthlyAndYearlyDonutSingle = async () => {
+	const res = await http.get('/items/meter_dailyload_profile_single_phase', {
+		params: {
+			sort: '-server_timestamp',
+			limit: 1,
+			fields: 'server_timestamp',
+			access_token,
+		},
+	})
+
+	const date = res?.data?.data[0]?.server_timestamp
+	const addedDate = add(new Date(date), {
+		hours: 5,
+		minutes: 30,
+	})
+	return format(addedDate, 'dd/MM/yyyy HH:mm:ss')
+	//return newdata
+}
+
+
+//All Phase
+
+export const fetchPowerConsumptionInMonth = async ({
+	month,
+	year,
+}: {
+	month: number
+	year: number
+}) => {
+	// const year = new Date().getFullYear()
+	const startDate = format(new Date(year, month - 1, 1), 'yyyy-MM-dd')
+	const endDate = format(
+		new Date(year, month - 1, getDaysInMonth(new Date(year, month - 1))),
+		'yyyy-MM-dd'
+	)
+
+	const res = await http.get('/items/meter_daily_load_data', {
+		params: {
+			filter: {
+				_and: [
+					{date: {_between: [startDate, endDate]}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'aggregate[sum]': 'energy_wh_import',
+			access_token,
+			'groupBy[]': 'date',
+		},
+	})
+
+	const syncDate = await fetchLatestTimeForPowerConsumptionMonthlyAndYearly()
+	return {
+		data: res?.data?.data,
+		syncDate,
+	}
+}
+//Single Phase -- Power consumption history
+
+export const fetchLatestTimeForPowerConsumptionMonthlyAndYearlySingle = async () => {
+	const res = await http.get('/items/meter_dailyload_profile_single_phase', {
+		params: {
+			sort: '-server_timestamp',
+			limit: 1,
+			fields: 'server_timestamp',
+			access_token,
+		},
+	})
+
+	const date = res?.data?.data[0]?.server_timestamp
+	const addedDate = add(new Date(date), {
+		hours: 5,
+		minutes: 30,
+	})
+	return format(addedDate, 'dd/MM/yyyy HH:mm:ss')
+}
+
+
+export const fetchPowerConsumptionInMonthSingle = async ({
+	month,
+	year,
+}: {
+	month: number
+	year: number
+}) => {
+	// const year = new Date().getFullYear()
+	const startDate = format(new Date(year, month - 1, 1), 'yyyy-MM-dd')
+	const endDate = format(
+		new Date(year, month - 1, getDaysInMonth(new Date(year, month - 1))),
+		'yyyy-MM-dd'
+	)
+
+	const res = await http.get('/items/meter_dailyload_profile_single_phase', {
+		params: {
+			filter: {
+				_and: [
+					{source_timestamp: {_between: [startDate, endDate]}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'aggregate[sum]': 'energy_kwh_import',
+			access_token,
+			'groupBy[]': 'day(source_timestamp),source_date',
+			'sort': 'day(source_timestamp)',
+		},
+	})
+
+	//const syncDate = await fetchLatestTimeForPowerConsumptionMonthlyAndYearlySingle()
+	return {
+		data: res?.data?.data,
+		//syncDate,
+	}
+}
+
+
+//Third Phase -- Power consumption history
+
+export const fetchLatestTimeForPowerConsumptionMonthlyAndYearlyThird = async () => {
+	const res = await http.get('/items/meter_dailyload_profile_three_phase', {
+		params: {
+			sort: '-server_timestamp',
+			limit: 1,
+			fields: 'server_timestamp',
+			access_token,
+		},
+	})
+
+	const date = res?.data?.data[0]?.server_timestamp
+	const addedDate = add(new Date(date), {
+		hours: 5,
+		minutes: 30,
+	})
+	return format(addedDate, 'dd/MM/yyyy HH:mm:ss')
+}
+
+
+export const fetchPowerConsumptionInMonthThird = async ({
+	month,
+	year,
+}: {
+	month: number
+	year: number
+}) => {
+	// const year = new Date().getFullYear()
+	const startDate = format(new Date(year, month - 1, 1), 'yyyy-MM-dd')
+	const endDate = format(
+		new Date(year, month - 1, getDaysInMonth(new Date(year, month - 1))),
+		'yyyy-MM-dd'
+	)
+
+	const res = await http.get('/items/meter_dailyload_profile_three_phase', {
+		params: {
+			filter: {
+				_and: [
+					{source_timestamp: {_between: [startDate, endDate]}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'aggregate[sum]': 'energy_wh_import',
+			access_token,
+			'groupBy[]': 'day(source_timestamp),source_date',
+			'sort': 'day(source_timestamp)',
+		},
+	})
+
+	//const syncDate = await fetchLatestTimeForPowerConsumptionMonthlyAndYearlyThird()
+	return {
+		data: res?.data?.data,
+		//syncDate,
+	}
+}
+
+// 
+export const fetchRelayDisconnectedMeters = async () => {
+	return await http.get('/items/meters', {
+		params: {
+			filter: {
+				_and: [
+					{relay_status: {_eq: 'Disconnected'}},
+					{utility_id: {_eq: utilityId}},
+				],
+			},
+			'aggregate[count]': 'meter_serial_number',
+			groupBy: 'meter_connection_type',
+			access_token,
+		},
+	})
+}
+
+export const fetchPowerOutageCount = async () => {
+	return await http.get('/items/all_events_and_data', {
+		params: {
+			filter: {utility_id: {_eq: utilityId}},
+			'aggregate[count]': 'outage_duration',
+			access_token,
+		},
+	})
+}
+
+export const fetchTamperEventCount = async () => {
+	const res = await http.get('/items/all_events_and_data', {
+		params: {
+			filter: {
+				_and: [
+					{occurence_or_restore_or_na: {_neq: null}},
+					{utility_id: {_eq: '3'}},
+					{
+						event_code: {
+							_in: [
+								'1',
+								'2',
+								'3',
+								'4',
+								'5',
+								'6',
+								'7',
+								'8',
+								'9',
+								'10',
+								'11',
+								'12',
+								'51',
+								'52',
+								'53',
+								'54',
+								'55',
+								'56',
+								'63',
+								'64',
+								'65',
+								'66',
+								'67',
+								'68',
+								'69',
+								'70',
+								'101',
+								'102',
+								'201',
+								'202',
+								'203',
+								'204',
+								'205',
+								'206',
+								'207',
+								'208',
+								'209',
+								'210',
+								'211',
+								'212',
+								'213',
+								'214',
+								'215',
+								'216',
+								'151',
+								'152',
+								'153',
+								'154',
+								'155',
+								'157',
+								'158',
+								'159',
+								'160',
+								'161',
+								'162',
+								'163',
+								'164',
+								'165',
+								'166',
+								'251',
+								'301',
+								'302',
+							],
+						},
+					},
+				],
+			},
+			'groupBy[]': 'occurence_or_restore_or_na',
+			'aggregate[count]': 'occurence_or_restore_or_na',
+			access_token,
+		},
+	})
+
+	const data = res.data.data
+
+	const restore = data.find(
+		(item) => item.occurence_or_restore_or_na === 'Restore'
+	).count.occurence_or_restore_or_na
+
+	const occurence = data.find(
+		(item) => item.occurence_or_restore_or_na === 'Occurrence'
+	).count.occurence_or_restore_or_na
+
+	const na = data.find((item) => item.occurence_or_restore_or_na === 'na').count
+		.occurence_or_restore_or_na
+
+	return Math.abs(Number(occurence - restore + na))
+}
+
+export const fetchDashboardStats = async () => {
+	const res = await Promise.all([
+		fetchTotalDeployedMeters,
+		fetchTotalInstalledMeters,
+		fetchTotalActiveMeters,
+		fetchPowerOutageCount,
+		fetchMtd,
+		fetchYtd,
+		fetchTamperEventCount,
+		fetchLatestDateTimeForDataSyncForMeters,
+		fetchLatestDateTimeForDailyLoadSync,
+	])
+}

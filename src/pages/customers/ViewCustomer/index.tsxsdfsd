@@ -1,0 +1,67 @@
+import { Breadcrumbs, CircularProgress, Grid, Divider, Typography, Box } from '@mui/material'
+import { getData } from './getData'
+import { useQuery, UseQueryResult } from 'react-query'
+import { fetchCustomerViewDetails } from 'api/services/customers'
+import { Link, useParams } from 'react-router-dom'
+
+function ViewCustomer() {
+	const params = useParams()
+
+	const { data, isLoading, error }: UseQueryResult<any, Error> = useQuery(
+		['customer-view-details', params.consumerId],
+		fetchCustomerViewDetails
+	)
+
+	if (isLoading) {
+		return (
+			<Grid className='flex items-center justify-center w-full h-screen'>
+				<CircularProgress />
+			</Grid>
+		)
+	}
+
+	if (error) {
+		return <Grid className='text-lg text-gray-700 p-4'>{error?.message}</Grid>
+	}
+
+	return (
+		<>
+
+			<Breadcrumbs aria-label='breadcrumb'>
+				<Link to='/customers'>
+					<Typography variant="h5" sx={{ color: "black", pl: 3 }}>Customers</Typography>
+				</Link>
+				<Typography variant="h5" sx={{ color: "black" }}> {params?.consumerId} </Typography>
+			</Breadcrumbs>
+
+			<Divider variant="middle" sx={{ pt: 2 }} />
+
+			<Box sx={{ mt: 5, pl: 2, pr: 2 }}>
+				<Box sx={{ borderRadius: 3 }}>
+					{getData(data?.data?.data[0]).map((item, index) => (
+						<Grid sx={{ backgroundColor: "white", border: "1px solid #e5e7eb", mt: 5, borderRadius: 3 }} className="rounded-md" key={index}>
+
+							<Grid sx={{ backgroundColor: "#e5e7eb" }}>
+								<Typography variant="h6" sx={{ color: "gray[600]", p: 2, mb: 5 }}> {item.title} </Typography>
+							</Grid>
+
+							<Grid container className='px-5 py-2'>
+								{item.values.map((item, index) => (
+									<Grid item xs={4} key={index}>
+										<Grid sx={{ mb: 2, p: 2 }}>
+											<Typography sx={{ color: "gray", mb: 1, fontSize: 14 }}> {item.label} </Typography>
+											<Typography sx={{ fontSize: 14 }}> {item.value} </Typography>
+										</Grid>
+									</Grid>
+								))}
+							</Grid>
+
+						</Grid>
+					))}
+				</Box>
+			</Box>
+		</>
+	)
+}
+
+export default ViewCustomer

@@ -1,0 +1,114 @@
+import {Box, Tabs, Tab, Typography, CircularProgress} from '@mui/material'
+import {fetchTodaysDataSyncInstant} from 'api/services/dashboard'
+import {fetchLatestDateTimeForDataSync} from 'api/services/time-labels'
+import {format} from 'date-fns'
+import {useState} from 'react'
+import {useQuery} from 'react-query'
+import DataSync2 from './DataSyncBlockLoad'
+import DataSync3 from './DataSyncDaily'
+import DataSyncInstant from './DataSyncInstant'
+import styled, { withTheme } from "styled-components/macro";
+import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
+import {
+  Card as MuiCard,
+  CardContent as MuiCardContent,
+  CardHeader,
+  IconButton,
+} from "@mui/material";
+import { spacing } from "@mui/system";
+
+const MeterDataSyncGraph = () => {
+	const [value, setValue] = useState(0)
+
+	const {data: time} = useQuery(
+		'latest-date-time-sync',
+		fetchLatestDateTimeForDataSync
+	)
+
+	const handleChange = (event, newValue) => {
+		setValue(newValue)
+	}
+
+	const Card = styled(MuiCard)(spacing);
+
+	const CardContent = styled(MuiCardContent)`
+	  &:last-child {
+		padding-bottom: 14px;
+	  }
+	`;
+
+	const ChartWrapper = styled.div`
+	  height: 240px;
+	  width: 100%;
+	`;
+	
+	
+	return (
+		<Card mb={6}>
+			<div className=''>
+				<div className='flex justify-between items-center pr-5 pt-5 pb-4'>
+					<CardHeader title="Active Meters in Last 30 days"/>
+					<div className=''>
+						<span><AccessAlarmIcon className="alarmicon" />{''} </span>
+						<span className='text-sm text-gray-600'>{`${
+							!!time?.data?.data[0]?.server_date_time
+								? format(
+										new Date(time?.data?.data[0]?.server_date_time),
+										'dd/MM/yyyy HH:mm:ss'
+								  )
+								: '--'
+						}`}</span>
+					</div>
+				</div>
+			</div>
+			<Box sx={{borderBottom: 1, borderColor: 'divider'}}>
+				<Tabs
+					value={value}
+					onChange={handleChange}
+					aria-label='basic tabs example'
+				>
+					<Tab label='Instantaneous data' {...a11yProps(0)} />
+					<Tab label='Block load data' {...a11yProps(1)} />
+					<Tab label='Daily load data' {...a11yProps(2)} />
+				</Tabs>
+			</Box>
+			<TabPanel value={value} index={0}>
+				<DataSyncInstant />
+			</TabPanel>
+			<TabPanel value={value} index={1}>
+				<DataSync2 />
+			</TabPanel>
+			<TabPanel value={value} index={2}>
+				<DataSync3 />
+			</TabPanel>
+		</Card>
+	)
+}
+
+export default MeterDataSyncGraph
+
+function TabPanel(props) {
+	const {children, value, index, ...other} = props
+
+	return (
+		<div
+			role='tabpanel'
+			hidden={value !== index}
+			id={`simple-tabpanel-${index}`}
+			aria-labelledby={`simple-tab-${index}`}
+			{...other}
+		>
+			{value === index && (
+				<Box sx={{p: 3}}>
+					<Typography>{children}</Typography>
+				</Box>
+			)}
+		</div>
+	)
+}
+function a11yProps(index) {
+	return {
+		id: `simple-tab-${index}`,
+		'aria-controls': `simple-tabpanel-${index}`,
+	}
+}

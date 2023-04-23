@@ -1,0 +1,260 @@
+import { Box, Breadcrumbs, Button, Grid, Typography, Divider, TextField as MuiTextField, } from '@mui/material'
+import { useQuery } from 'react-query'
+import { Link, useParams, NavLink } from 'react-router-dom'
+import DetailsCard from './details/components/DetailsCard'
+import { Controller,useForm } from 'react-hook-form'
+
+import { useState } from 'react'
+import { fetchCustomerList } from 'api/services/customers'
+import styled from "styled-components/macro";
+import { spacing } from "@mui/system";
+
+
+
+
+const TextFieldSpacing = styled(MuiTextField)(spacing);
+
+const TextField = styled(TextFieldSpacing)`
+  width: 100%;
+`;
+
+
+const customerDetails = {
+	USc_number: { label: 'Service Number' },
+	first_name: { label: 'First Name' },
+	last_name: { label: 'Last Name' },
+	address: { label: 'Customer Address' },
+	phone1: { label: 'Phone' },
+	emailid: { label: 'Email Id' },
+	sub_group: { label: 'Customer Sub Group' },
+	consumer_category: { label: 'Consumer Category' },
+	consumer_type_id: { label: 'Consumer Type' },
+	state: { label: 'State' },
+	district: { label: 'District' },
+	city: { label: 'City' },
+	pincode: { label: 'Pincode' },
+	consumer_status: { label: 'Status' },
+}
+const meterDetails = {
+	'meter_serial_number': { label: 'Meter Serial Number' },
+	'meter_serial_number.meter_connection_type.phase_name': {
+		label: 'Meter Phase',
+	},
+	'meter_serial_number.preorpostpaid.meter_type_name': { label: 'Meter Type' },
+	'meter_serial_number.meter_category_id.name': {
+		label: 'Meter Communication Type',
+	},
+	'meter_serial_number.meter_protocol_classification_id.name': {
+		label: 'Meter Communication Protocol',
+	},
+	'meter_serial_number.relay_status': { label: 'Relay Status' },
+}
+
+const surveyDetails = {
+	old_meterid: { label: 'Old Meter Id' },
+	old_meter_reading: { label: 'Old Meter Reading' },
+	latitude: { label: 'Latitude' },
+	longitude: { label: 'Longitude' },
+	surveyer_name: { label: 'Surveyor Name' },
+	surveryer_phone_number: { label: 'Surveyor Phone Number' },
+	survey_date: { label: 'Surveyor Date' },
+	installation_date: { label: 'Installation Date' },
+	installation_latitude: { label: 'Installation Latitude' },
+	installation_longitude: { label: 'Installation Longitude' },
+	new_meter_start_reading: { label: 'New Meter Start Reading' },
+	de_commission_date: { label: 'De-Commission Date' },
+}
+const loadVoltageDetails = {
+	load_unit: { label: 'Load Unit' },
+	saction_load: { label: 'Sanctioned Load' },
+	contract_demand: { label: 'Contract Demand' },
+	conneced_load: { label: 'Connection Load (KW)' },
+	supply_voltage: { label: 'Supply Voltage (V)' },
+}
+
+const billingDetails = {
+	tariff: { label: 'Tariff Type' },
+	bill_period: { label: 'Bill Period' },
+	'Multiplication Factor': { label: 'Multiplication Factor' },
+}
+
+const hierarchyDetails = {
+	utility_id: { label: 'Utility' },
+	zone_id: { label: 'Zone' },
+	circle_id: { label: 'Circle' },
+	division_id: { label: 'Division' },
+	sub_division_id: { label: 'Sub Division' },
+	sub_station_id: { label: 'Sub Station' },
+	section_id: { label: 'Section' },
+	area_id: { label: 'Area' },
+}
+
+const eroDetails = {
+	circle_id: { label: 'Circle' },
+	ero_id: { label: 'ERO' },
+}
+const transactionDetails = {
+	created_by: { label: 'Created By', disabled: true },
+	created_date: { label: 'Created Date', disabled: true },
+	updated_by: { label: 'Updated By', disabled: true },
+	updated_date: { label: 'Updated Date', disabled: true },
+}
+
+export default function EditCustomer() {
+	const params = useParams()
+	const {
+		data,
+		/* isLoading: loadingCustomer, */
+		error,
+	} = useQuery(['customers', params?.customerId], () =>
+		fetchCustomerList({
+			limit: 1,
+			offset: 0,
+			search: { value: params?.customerId, type: 'customer_id' },
+			page: 1,
+		})
+	)
+	//console.log('data', data.data[0]),
+
+
+	const { handleSubmit, control, watch, register } = useForm({
+		defaultValues: {},
+	})
+
+	const onSubmit = async (formData, e) => {
+		try {
+			console.log(formData)
+		} catch (err) {
+			console.log(err)
+		}
+	}
+
+	const onError = (errors, e) => {
+		console.log(errors, e)
+	}
+
+	return (
+		<>
+
+			{/* <Breadcrumbs aria-label='breadcrumb'>
+				<Link to='/customers'>
+					<Typography variant="h5"> Customers </Typography>
+				</Link>
+				<Typography variant='h5'> {params?.consumerId} </Typography>
+			</Breadcrumbs> */}
+
+			<Grid md={6} mb={2} mt={2}>
+				<Typography variant="h3" gutterBottom sx={{ color: "black" }} >
+					Update Customer
+				</Typography>
+				<Breadcrumbs aria-label="breadcrumb" className='breadcrumbtext'>
+					<NavLink to="/customers">Customers </NavLink>
+					<Typography variant="caption">Update Customer</Typography>
+				</Breadcrumbs>
+			</Grid>
+
+			<Divider />
+
+			{/* <div className='space-y-7 pb-16 px-5 pt-5'>
+				<div className='bg-white rounded-xl p-3'> */}
+			<Grid md={12}>
+				<Grid sx={{ borderRadius: 3 }}>
+					<form
+						className=' space-y-3'
+						onSubmit={handleSubmit(onSubmit, onError)}
+					>
+						<CustomerFormSection
+							register={register}
+							control={control}
+							label='Customer details'
+							labelsObj={customerDetails}
+						/>
+						<CustomerFormSection
+							register={register}
+							control={control}
+							label='Meter details'
+							labelsObj={meterDetails}
+						/>
+						<CustomerFormSection
+							register={register}
+							control={control}
+							label='Survey details'
+							labelsObj={surveyDetails}
+						/>
+						<CustomerFormSection
+							register={register}
+							control={control}
+							label='Load and voltage details'
+							labelsObj={loadVoltageDetails}
+						/>
+						<CustomerFormSection
+							register={register}
+							control={control}
+							label='Billing related details'
+							labelsObj={billingDetails}
+						/>
+						<CustomerFormSection
+							register={register}
+							control={control}
+							label='Hierarchy'
+							labelsObj={hierarchyDetails}
+						/>
+						<CustomerFormSection
+							register={register}
+							control={control}
+							label='ERO details'
+							labelsObj={eroDetails}
+						/>
+						<CustomerFormSection
+							register={register}
+							control={control}
+							label='Transaction details'
+							labelsObj={transactionDetails}
+						/>
+						<Grid sx={{mt:5, textAlign:"center"}}>
+							<Button type='submit' variant='contained'>
+								Submit
+							</Button>
+						</Grid>
+					</form>
+				</Grid>
+			</Grid>
+			{/* </div>
+			</div> */}
+		</>
+	)
+}
+
+const CustomerFormSection = ({ control, labelsObj, label, register }) => {
+	return (
+		<DetailsCard title={label}>
+			<Box className="update_customer_page"
+				sx={{
+					display: 'grid',
+					gap: '1rem',
+					gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+				}}
+			>
+				{console.log(labelsObj)}
+				{Object.entries(labelsObj).map((item: any) => (
+					<TextField
+						required
+						name={item[0]}
+						{...register(item[0])}
+						label={item[1]?.label}
+						control={control}
+						// defaultValue={item[1]?.label}
+						id="standard-required"
+						variant="outlined"
+						InputLabelProps={{
+							shrink: true,
+						}}
+					// focused
+					// color="secondary"
+					/>
+				)
+				)}
+			</Box>
+		</DetailsCard>
+	)
+}

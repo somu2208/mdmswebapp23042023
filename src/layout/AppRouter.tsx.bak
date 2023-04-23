@@ -1,0 +1,52 @@
+import {Route, Routes} from 'react-router-dom'
+import {Suspense} from 'react'
+import CustomProgress from 'components/FullScreenProgress'
+import Login from 'pages/login'
+import QrLogin from 'pages/login/QrLogin'
+import Layout from 'layout'
+import Dashboard from 'pages/dashboard'
+import HesDashboard from 'pages/hes-dashboard'
+import Customers from 'pages/customers'
+import Meters from 'pages/meters'
+import Gis from 'pages/gis'
+import TampersHome from 'pages/tampers'
+import SelectRole from 'pages/SelectRole'
+import Prepaid from 'pages/Prepaid'
+import TestPage from 'pages/test'
+const AppRouter = () => {
+	return (
+		<Routes>
+			<Route path='/login/*' element={<Login />} />
+			<Route path='/login/*' element={<Login />} />
+			<Route path='/select-role' element={<SelectRole />} />
+			<Route path='/' element={<Layout />}>
+				{/* Main Page Routes */}
+				<Route index element={<WithSuspense c={Dashboard} />} />
+				<Route
+					path='hes-dashboard/*'
+					element={<WithSuspense c={HesDashboard} />}
+				/>
+				<Route path='prepaid/*' element={<WithSuspense c={Prepaid} />} />
+				<Route path='customers/*' element={<WithSuspense c={Customers} />} />
+				<Route path='meters/*' element={<WithSuspense c={Meters} />} />
+				<Route path='tampers/*' element={<WithSuspense c={TampersHome} />} />
+				<Route path='test/*' element={<WithSuspense c={TestPage} />} />
+				<Route
+					path='geographic-info-system/*'
+					element={<WithSuspense c={Gis} />}
+				/>
+				<Route path='*' element={<div>Page Not Found</div>} />
+			</Route>
+		</Routes>
+	)
+}
+
+export default AppRouter
+
+const WithSuspense = ({c: Component}) => {
+	return (
+		<Suspense fallback={<CustomProgress />}>
+			<Component />
+		</Suspense>
+	)
+}

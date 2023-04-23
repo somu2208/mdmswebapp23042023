@@ -1,0 +1,338 @@
+import {CircularProgress, Pagination, Typography, Grid} from '@mui/material'
+import {exportMeter360Data, fetchMeter360Data} from 'api/services/meters'
+import CsvExport from 'components/CsvExport'
+import ExportToExcel from 'components/ExportToExcel'
+import Table from 'components/table'
+import {useEffect, useState} from 'react'
+import {useMutation} from 'react-query'
+import {useParams, useSearchParams} from 'react-router-dom'
+import {add5Hr30Min} from 'utils'
+import Filters from './Filters'
+import {useMeterData} from './_DataProvider'
+
+const Events = () => {
+	const {fromDate, toDate} = useMeterData()
+	const [search] = useSearchParams()
+	const phaseId = search.get('phase')
+	const [page, setPage] = useState(1)
+	const params = useParams()
+	const meterId = params.meterId
+
+	const handleChange = (event, value) => {
+		setPage(value)
+		return mutate({
+			page: value,
+			fromDate,
+			toDate,
+			meterId: params.meterId,
+			key,
+		})
+	}
+
+	const {
+		data,
+		error,
+		isLoading: loading,
+		mutate,
+	} = useMutation('meter360DataEvents', fetchMeter360Data)
+
+	const key =
+		phaseId === '1'
+			? 'meter_event_log_single_phase'
+			: 'meter_event_log_three_phase'
+
+	const handleExport = async () => {
+		if (!fromDate || !toDate) return
+		const data = await exportMeter360Data({key, fromDate, toDate, meterId})
+		return data
+	}
+
+	useEffect(() => {
+		mutate({
+			fromDate,
+			toDate,
+			key,
+			meterId: params.meterId,
+			page,
+		})
+	}, [])
+
+	if (error) return <Typography>Server Error</Typography>
+	return (
+		<>
+			<Grid className='pb-2 flex justify-end items-center gap-2 innnerbox'>
+				{/* <ExportToExcel
+					asyncExportMethod={handleExport}
+					labels={phaseId === '1' ? eventsPhase1columns : eventsPhase2columns}
+				/> */}
+				<Filters
+					mutate={() =>
+						mutate({
+							fromDate,
+							toDate,
+							key,
+							meterId: params.meterId,
+							page,
+						})
+					}
+					page={page}
+					key={key}
+				/>
+			</Grid>
+			{loading ? (
+				<CircularProgress />
+			) : (
+				<Grid mt={1} sx={{ backgroundColor: "white", p: 2 }} className="rounded-lg">
+					{data?.data?.length ? (
+						<>
+							<Grid className='text-sm-count text-right'>
+								<Typography>Total Count: {data?.meta?.filter_count}</Typography>
+							</Grid>
+							{phaseId === '1' && (
+								<Grid>
+									<Table
+										tableData={data.data}
+										columns={eventsPhase1columns}
+										loading={loading}
+									/>
+								</Grid>
+							)}
+							{phaseId === '2' && (
+								<Table
+								tableData={data.data}
+									columns={eventsPhase2columns}
+									loading={loading}
+								/>
+							)}
+							{/* <div className='flex justify-between mt-5'>
+								<p className='text-gray-600'>{`Page : ${page}/${Math.ceil(
+									data?.meta?.filter_count / 10
+								)}`}</p>
+								<Pagination
+									variant='outlined'
+									shape='rounded'
+									count={Math.ceil(data?.meta?.filter_count / 10)}
+									page={page}
+									onChange={handleChange}
+								/>
+							</div> */}
+						</>
+					) : (
+						<Typography mt={3} className='text-center'>No records found</Typography>
+					)}
+				</Grid>
+			)}
+		</>
+	)
+}
+
+export default Events
+
+export const eventsPhase2columns = [
+	{
+		field: 'meter_serial_number',
+		headerName: 'Meter Serial Number',
+		// key: 'meter_serial_number',
+		// title: 'Meter Serial Number',
+	},
+	{
+		field: 'event_code',
+		headerName: 'Event Code',
+		// key: 'event_code',
+		// title: 'Event Code',
+	},
+	{
+		field: 'event_description',
+		headerName: 'Event Description',
+		// key: 'event_description',
+		// title: 'Event Description',
+	},
+	{
+		field: 'source_timestamp',
+		headerName: 'Meter Timestamp',
+		// key: 'source_timestamp',
+		// title: 'Meter Timestamp',
+		// render: (value) => value && add5Hr30Min(value),
+	},
+	{
+		field: 'server_timestamp',
+		headerName: 'Server timestamp',
+		// key: 'server_timestamp',
+		// title: 'Server timestamp',
+		// render: (value) => value && add5Hr30Min(value),
+	},
+	{
+		field: 'current_ir',
+		headerName: 'Current Ir(A)',
+		// key: 'current_ir',
+		// title: 'Current Ir(A)',
+	},
+	{
+		field: 'current_iy',
+		headerName: 'Current Iy(A)',
+		// key: 'current_iy',
+		// title: 'Current Iy(A)',
+	},
+	{
+		field: 'current_ib',
+		headerName: 'Current Ib(A)',
+		// key: 'current_ib',
+		// title: 'Current Ib(A)',
+	},
+	{
+		field: 'voltage_vrn',
+		headerName: 'Voltage Vrn(V)',
+		// key: 'voltage_vrn',
+		// title: 'Voltage Vrn(V)',
+	},
+	{
+		field: 'voltage_vyn',
+		headerName: 'Voltage Vyn(V)',
+		// key: 'voltage_vyn',
+		// title: 'Voltage Vyn(V)',
+	},
+	{
+		field: 'voltage_vbn',
+		headerName: 'Voltage Vbn(V)',
+		// key: 'voltage_vbn',
+		// title: 'Voltage Vbn(V)',
+	},
+	{
+		field: 'voltage_vry',
+		headerName: 'Voltage Vry(V)',
+		// key: 'voltage_vry',
+		// title: 'Voltage Vry(V)',
+	},
+	{
+		field: 'voltage_vyb',
+		headerName: 'Voltage Vyb(V)',
+		// key: 'voltage_vyb',
+		// title: 'Voltage Vyb(V)',
+	},
+	{
+		field: 'powerfactor_r_phase',
+		headerName: 'Power Factor R Phase',
+		// key: 'powerfactor_r_phase',
+		// title: 'Power Factor R Phase',
+	},
+	{
+		field: 'powerfactor_y_phase',
+		headerName: 'Power Factor Y Phase',
+		// key: 'powerfactor_y_phase',
+		// title: 'Power Factor Y Phase',
+	},
+	{
+		field: 'powerfactor_b_phase',
+		headerName: 'Power Factor B Phase',
+		// key: 'powerfactor_b_phase',
+		// title: 'Power Factor B Phase',
+	},
+	{
+		field: 'cumulative_energy_kWh',
+		headerName: 'Cumulative energy kWh',
+		// key: 'cumulative_energy_kWh',
+		// title: 'Cumulative energy kWh',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumulative_tamper_count',
+		headerName: 'Cumulative Tamper Count',
+		// key: 'cumulative_tamper_count',
+		// title: 'Cumulative Tamper Count',
+	},
+	// {
+	// 	key: 'generic_event_log_sequence_number',
+	// 	title: 'Generic event log sequence number',
+	// },
+	// {
+	// 	key: 'created_on',
+	// 	title: 'Created on',
+	// },
+	// {
+	// 	key: 'utility_id',
+	// 	title: 'Utility id',
+	// },
+]
+export const eventsPhase1columns = [
+	{
+		field: 'meter_serial_number',
+		headerName: 'Meter Serial Number',
+		// key: 'meter_serial_number',
+		// title: 'Meter Serial Number',
+	},
+	{
+		field: 'event_code',
+		headerName: 'Event Code',
+		// key: 'event_code',
+		// title: 'Event code',
+	},
+	{
+		field: 'event_description',
+		headerName: 'Event Description',
+		// key: 'event_description',
+		// title: 'Event Description',
+	},
+	{
+		field: 'source_timestamp',
+		headerName: 'Meter Timestamp',
+		// key: 'source_timestamp',
+		// title: 'Meter Timestamp',
+		// render: (value) => value && add5Hr30Min(value),
+		// renderCell: (value) => {
+		// 	if (value?.row?.source_timestamp) {
+		// 		return (value && add5Hr30Min(value));
+		// 	}
+		// }
+	},
+	{
+		field: 'server_timestamp',
+		headerName: 'Server Timestamp',
+		// key: 'server_timestamp',
+		// title: 'Server Timestamp',
+		// render: (value) => value && add5Hr30Min(value),
+	},
+	{
+		field: 'current',
+		headerName: 'Current(A)',
+		// key: 'current',
+		// title: 'Current(A)',
+	},
+	{
+		field: 'voltage',
+		headerName: 'Voltage(V)',
+		// key: 'voltage',
+		// title: 'Voltage(V)',
+	},
+	{
+		field: 'powerfactor',
+		headerName: 'Power Factor',
+		// key: 'powerfactor',
+		// title: 'Power Factor',
+	},
+	{
+		field: 'cumulative_energy_kWh',
+		headerName: 'Cumulative energy kWh',
+		// key: 'cumulative_energy_kWh',
+		// title: 'Cumulative energy kWh',
+		// render: (value) => (value / 1000).toFixed(2),
+		
+	},
+	{
+		field: 'cumulative_tamper_count',
+		headerName: 'Cumulative tamper count',
+		// key: 'cumulative_tamper_count',
+		// title: 'Cumulative tamper count',
+	},
+	// {
+	// 	key: 'generic_event_log_sequence_number',
+	// 	title: 'Generic event log sequence number',
+	// },
+	// {
+	// 	key: 'created_on',
+	// 	title: 'Created on',
+	// },
+	// {
+	// 	key: 'utility_id',
+	// 	title: 'Utility id',
+	// },
+]

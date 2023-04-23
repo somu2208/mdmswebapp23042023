@@ -1,0 +1,335 @@
+import { CircularProgress, Pagination, Grid, Typography, Divider } from '@mui/material'
+import { useEffect, useState } from 'react'
+import { useSearchParams, useParams } from 'react-router-dom'
+import Filters from './Filters'
+import { useMeterData } from './_DataProvider'
+import Table from 'components/table'
+import { exportMeter360Data, fetchMeter360Data } from 'api/services/meters'
+import { useMutation } from 'react-query'
+import { format } from 'date-fns'
+import { add5Hr30Min, captureTimeFormat } from 'utils'
+import CsvExport from 'components/CsvExport'
+import ExportToExcel from 'components/ExportToExcel'
+
+const DailyLoad = () => {
+	const {
+		data,
+		error,
+		isLoading: loading,
+		mutate,
+	} = useMutation('meter360DataDailyLoad', fetchMeter360Data)
+
+	const params = useParams()
+	const meterId = params.meterId
+
+	const { fromDate, toDate } = useMeterData()
+	const [page, setPage] = useState(1)
+
+	const [search] = useSearchParams()
+	const phaseId = search.get('phase')
+	const key =
+		phaseId === '1'
+			? 'meter_dailyload_profile_single_phase'
+			: 'meter_dailyload_profile_three_phase'
+
+	const handleExport = async () => {
+		if (!fromDate || !toDate) return
+		const data = await exportMeter360Data({ key, fromDate, toDate, meterId })
+		return data
+	}
+
+	useEffect(() => {
+		mutate({
+			fromDate,
+			toDate,
+			key,
+			meterId: params.meterId,
+			page,
+		})
+	}, [])
+
+	return (
+		<>
+			<Grid className='pb-2 flex justify-end items-center gap-2 innnerbox'>
+				{/* <div className='pb-2 flex justify-end items-center gap-2'> */}
+				{/* <ExportToExcel
+					asyncExportMethod={handleExport}
+					labels={
+						phaseId === '1' ? dailyLoadPhase1columns : dailyLoadPhase2columns
+					}
+				/> */}
+				<Filters
+					mutate={() =>
+						mutate({
+							fromDate,
+							toDate,
+							key,
+							meterId: params.meterId,
+							page,
+						})
+					}
+					page={page}
+					key={key}
+				/>
+				{/* </div> */}
+			</Grid>
+			{loading ? (
+				<CircularProgress />
+			) : (
+				<Grid mt={5}>
+					{data ? (
+						<>
+							<TableComponent
+								data={data}
+								page={page}
+								toDate={toDate}
+								fromDate={fromDate}
+								meterId={params?.meterId}
+								mutate={mutate}
+								phaseId={phaseId}
+								setPage={setPage}
+								key={key}
+								loading={loading}
+								error={error}
+							/>
+						</>
+					) : (
+						<Typography className='text-center mt-8'>No records found</Typography>
+					)}
+				</Grid>
+			)}
+		</>
+	)
+}
+
+const TableComponent = ({
+	setPage,
+	mutate,
+	fromDate,
+	toDate,
+	meterId,
+	key,
+	phaseId,
+	data,
+	page,
+	loading,
+	error,
+}) => {
+	const handleChange = (event, value) => {
+		setPage(value)
+		return mutate({
+			page: value,
+			fromDate,
+			toDate,
+			meterId,
+			key,
+		})
+	}
+
+	if (error) return <Grid>Server Error</Grid>
+	if (data?.data?.length === 0)
+		return <Typography className='text-center'>No data</Typography>
+	return (
+		<>
+			<Grid sx={{ backgroundColor: "white", p: 2 }} className="rounded-lg" mt={1}>
+				<Grid className='text-sm-count text-right'>
+					<Typography>Total Count: {data?.meta?.filter_count}</Typography>
+				</Grid>
+				{phaseId === '1' && (
+					<Grid>
+						<Table
+							tableData={data?.data}
+							columns={dailyLoadPhase1columns}
+							loading={loading}
+						/>
+					</Grid>
+				)}
+				{phaseId === '2' && (
+					<Table
+						tableData={data?.data}
+						columns={dailyLoadPhase2columns}
+						loading={loading}
+					/>
+				)}
+
+				{/* <div className='flex justify-between mt-5'>
+				<p className='text-gray-600'>{`Page : ${page}/${Math.ceil(
+					data?.meta?.filter_count / 10
+				)}`}</p>
+				<Pagination
+					variant='outlined'
+					shape='rounded'
+					count={Math.ceil(data?.meta?.filter_count / 10)}
+					page={page}
+					onChange={handleChange}
+				/>
+			</div> */}
+			</Grid>
+		</>
+	)
+}
+export default DailyLoad
+
+export const dailyLoadPhase1columns = [
+	{
+		field: 'meter_serial_number',
+		headerName: 'Meter Serial Number',
+		// key: 'meter_serial_number', 
+		// title: 'Meter Serial Number'
+	},
+	{
+		field: 'source_timestamp',
+		headerName: 'Meter Timestamp',
+		// key: 'source_timestamp',
+		// title: 'Meter Timestamp',
+		render: (value) => value && add5Hr30Min(value),
+	},
+	{
+		field: 'server_timestamp',
+		headerName: 'Server Timestamp',
+		// key: 'server_timestamp',
+		// title: 'Server Timestamp',
+		render: (value) => value && add5Hr30Min(value),
+	},
+	{
+		field: 'cumilative_energy_kWh_export',
+		headerName: 'Cumulative Energy Export(KWh)',
+		// key: 'cumilative_energy_kWh_export',
+		// title: 'Cumulative Energy Export(KWh)',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumilative_energy_kWh_import',
+		headerName: 'Cumulative Energy Import(KWh)',
+		// key: 'cumilative_energy_kWh_import',
+		// title: 'Cumulative Energy Import(KWh)',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumilative_energy_kVAh_export',
+		headerName: 'Cumulative Energy Export(KVAh)',
+		// key: 'cumilative_energy_kVAh_export',
+		// title: 'Cumulative Energy Export(KVAh)',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumilative_energy_kVAh_import',
+		headerName: 'Cumulative Energy Import(KVAh)',
+		hide: 'true',
+		// key: 'cumilative_energy_kVAh_import',
+		// title: 'Cumulative Energy Import(KVAh)',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'maxmimum_demand_kW',
+		headerName: 'Maximum Demand (kW)',
+		hide: 'true',
+		// key: 'maxmimum_demand_kW',
+		// title: 'Maximum Demand (kW)',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'maximum_demand_kW_capture_time',
+		headerName: 'Maximum Demand KW Capture Time',
+		hide: 'true',
+		// key: 'maximum_demand_kW_capture_time',
+		// title: 'Maximum Demand KW Capture Time',
+		render: (value) => value && captureTimeFormat(value),
+	},
+
+	{
+		field: 'maxmimum_demand_kVA',
+		headerName: 'Maximum Demand (KVA)',
+		hide: 'true',
+		// key: 'maxmimum_demand_kVA',
+		// title: 'Maximum Demand (KVA)',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'maximum_demand_kVA_capture_time',
+		headerName: 'Maximum demand kVA capture time',
+		hide: 'true',
+		// key: 'maximum_demand_kVA_capture_time',
+		// title: 'Maximum demand kVA capture time',
+		render: (value) => value && captureTimeFormat(value),
+	},
+	// {key: 'utility_id', title: 'Utility id'},
+]
+
+export const dailyLoadPhase2columns = [
+	{
+		field: 'meter_serial_number',
+		headerName: 'Meter serial number',
+		// key: 'meter_serial_number', 
+		// title: 'Meter serial number'
+	},
+	{
+		field: 'source_timestamp',
+		headerName: 'Source timestamp',
+		// key: 'source_timestamp',
+		// title: 'Source timestamp',
+		render: (value) => value && add5Hr30Min(value),
+	},
+	{
+		field: 'server_timestamp',
+		headerName: 'Server timestamp',
+		// key: 'server_timestamp',
+		// title: 'Server timestamp',
+		render: (value) => value && add5Hr30Min(value),
+	},
+	{
+		field: 'cumilative_energy_Wh_export',
+		headerName: 'Cumulative Energy Export(KWh)',
+		// key: 'cumilative_energy_Wh_export',
+		// title: 'Cumulative Energy Export(KWh)',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumilative_energy_Wh_import',
+		headerName: 'Cumulative Energy Import(KWh)',
+		// key: 'cumilative_energy_Wh_import',
+		// title: 'Cumulative Energy Import(KWh)',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumilative_energy_VAh_export',
+		headerName: 'Cumulative Energy Export(KVAh)',
+		// key: 'cumilative_energy_VAh_export',
+		// title: 'Cumulative Energy Export(KVAh)',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'cumilative_energy_VAh_import',
+		headerName: 'Cumulative Energy Import(KVAh)',
+		// key: 'cumilative_energy_VAh_import',
+		// title: 'Cumulative Energy Import(KVAh)',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	{
+		field: 'maxmimum_demand_W',
+		headerName: 'Maximum Demand (kW)',
+		hide: 'true',
+		// key: 'maxmimum_demand_W',
+		// title: 'Maximum Demand (kW)',
+		render: (value) => (value / 1000).toFixed(2),
+	},
+	// {
+	// 	key: 'maximum_demand_W_capture_time',
+	// 	title: 'Maximum Demand KW Capture Time',
+	// 	// render: (value) => value && captureTimeFormat(value),
+	// },
+
+	// {
+	// 	key: 'maxmimum_demand_VA',
+	// 	title: 'Maximum Demand (KVA)',
+	// 	render: (value) => (value / 1000).toFixed(2),
+	// },
+	{
+		field: 'maximum_demand_VA_capture_time',
+		headerName: 'Maximum demand KVA capture time',
+		hide: 'true',
+		// key: 'maximum_demand_VA_capture_time',
+		// title: 'Maximum demand KVA capture time',
+		render: (value) => value && add5Hr30Min(value),
+	},
+]
